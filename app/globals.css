@@ -1,0 +1,3508 @@
+/* Global tokens and responsive streaming layout. */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+
+:root { --bg:#fff; --fg:#101010; --surface:#f5f5f4; --surface-2:#ededeb; --muted:#737373; --faint:rgba(0,0,0,.08); --header:rgba(255,255,255,.76); --accent:#e93a33; --shadow:0 12px 40px rgba(0,0,0,.09); color-scheme:light; }
+:root[data-theme="dark"] { --bg:#000; --fg:#fff; --surface:#0c0c0c; --surface-2:#171717; --muted:#a3a3a3; --faint:rgba(255,255,255,.11); --header:rgba(0,0,0,.77); --accent:#ef3e37; --shadow:0 14px 42px rgba(0,0,0,.48); color-scheme:dark; }
+* { box-sizing:border-box; } html { scroll-behavior:smooth; scrollbar-gutter:stable; } body { margin:0; background:var(--bg); color:var(--fg); font-family:Geist,Arial,sans-serif; font-size:15px; } a { color:inherit; text-decoration:none; } button,input,select { font:inherit; color:inherit; } button { cursor:pointer; border:0; background:none; } img { object-fit:cover; } .player-error { position:absolute; inset:0; display:grid; place-content:center; justify-items:center; gap:7px; color:#fff; text-align:center; background:#0b0b0b; }.player-error svg { color:var(--accent); }.player-error strong { font-size:15px; }.player-error span { color:#aaa; font-size:12px; }
+.header { position:fixed; top:0; z-index:50; width:100%; background:var(--header); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-bottom:1px solid var(--faint); transition:background .25s,border-color .25s; }
+.header-inner { height:70px; max-width:1600px; margin:auto; padding:0 4vw; display:flex; align-items:center; gap:36px; }
+.logo { display:flex; align-items:center; gap:3px; font-weight:700; font-size:20px; letter-spacing:-0.5px; }
+.brand-cinema-mark { width:32px; height:32px; border-radius:9px; object-fit:contain; filter:drop-shadow(0 3px 7px rgba(0,0,0,.24)); }
+.brand-cinema-type { display:flex; align-items:center; line-height:1; color:#151515; }.brand-cinema-type b { font-size:17px; font-weight:800; letter-spacing:-.055em; }
+:root[data-theme="dark"] .brand-cinema-type { color:#f4f1ec; }
+.desktop-nav { display:flex; align-items:center; gap:20px; flex:1; }
+.desktop-nav a { position:relative; color:var(--muted); font-size:13.5px; font-weight:500; white-space:nowrap; padding:6px 2px; transition:color .2s ease; display:inline-flex; align-items:center; line-height:1.2; }
+.desktop-nav a:hover { color:var(--fg); }
+.desktop-nav a.active { color:var(--fg); font-weight:500; }
+.desktop-nav a.active::after { content:''; position:absolute; bottom:-6px; left:0; right:0; height:2.5px; background:var(--accent); border-radius:2px; box-shadow:0 0 10px var(--accent); }
+.header-actions { display:flex; gap:8px; align-items:center; margin-left:auto; }
+.icon-button { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:var(--fg); transition:background .2s; }
+.icon-button:hover { background:var(--surface-2); }
+.header-profile-btn { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; color:var(--fg); transition:background .2s, transform .2s; }
+.header-profile-btn:hover { background:var(--surface-2); transform:scale(1.06); }
+.menu-button,.mobile-menu { display:none; }
+.mobile-menu a.active { color:var(--accent); font-weight:600; }
+.hero-carousel { position:relative; height:100vh; min-height:100vh; min-height:100dvh; overflow:hidden; }
+.hero-slide { position:absolute; inset:0; background-position:center 25%; background-size:cover; opacity:0; transition:opacity .8s ease-in-out; z-index:1; filter:contrast(1.09) saturate(1.08) brightness(1.05); transform:scale(1.012); }
+.hero-slide.active { opacity:1; z-index:1; }
+
+/* Fine film grain keeps compressed backdrops from looking flat without softening the subject. */
+.hero-carousel::before { content:""; position:absolute; inset:0; z-index:2; pointer-events:none; opacity:.055; mix-blend-mode:soft-light; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.9'/%3E%3C/svg%3E"); }
+
+/* LỚP PHỦ MỜ ĐEN (HERO SHADE) - ĐẢM BẢO CHỮ VÀ NÚT LUÔN NỔI BẬT CẢ Ở CHẾ ĐỘ SÁNG VÀ TỐI */
+.hero-shade {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: 
+    linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.85) 18%, rgba(0,0,0,0.5) 48%, transparent 75%),
+    linear-gradient(to right, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.82) 38%, rgba(0,0,0,0.22) 68%, transparent 90%),
+    linear-gradient(to bottom, rgba(0,0,0,0.72) 0%, transparent 22%);
+}
+
+/* CHUYỂN TIẾP MỀM MẠI DƯỚI ĐÁY HERO SANG NỀN TRẮNG Ở CHẾ ĐỘ SÁNG */
+:root:not([data-theme="dark"]) .hero-carousel::after,
+html[data-theme="light"] .hero-carousel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 35px;
+  background: linear-gradient(to bottom, transparent 0%, var(--bg) 100%);
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* THANH ĐÁY HERO: KHỐI THÔNG TIN VÀ 5 THUMBNAIL TỰA CHUNG VÀO ĐÁY MÀN HÌNH */
+.hero-bottom-bar {
+  position: absolute;
+  bottom: 48px;
+  left: 0;
+  right: 0;
+  padding: 0 4vw;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+/* THÔNG TIN PHIM: VỊ TRÍ CỐ ĐỊNH, KHÔNG BỊ XÊ DỊCH KHI ĐỔI PHIM */
+.hero-content {
+  position: relative;
+  z-index: 3;
+  width: min(580px, 48vw);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0;
+  animation: fadeInHero .4s ease-out;
+}
+.hero-label,.eyebrow { text-transform:uppercase; letter-spacing:.15em; font-size:10px; font-weight:600; color:var(--muted); }
+.hero-label { color:rgba(255,255,255,.82); display:flex; gap:9px; align-items:center; height:18px; margin:0 0 10px; }
+.hero-label span { width:6px; height:6px; border-radius:50%; background:var(--accent); }
+
+/* KHÓA CỨNG CHIỀU CAO TIÊU ĐỀ 110px VÀ MÀU TRẮNG NỔI BẬT TRÊN MỌI CHẾ ĐỘ */
+.hero h1,.hero-title {
+  font-size: clamp(36px, 4.8vw, 66px);
+  line-height: 1.02;
+  letter-spacing: -.065em;
+  color: #ffffff !important;
+  text-shadow: 0 2px 20px rgba(0,0,0,.95), 0 4px 35px rgba(0,0,0,.75);
+  margin: 0 0 12px;
+  max-width: 580px;
+  height: 110px;
+  display: flex;
+  align-items: flex-end;
+}
+.facts { display:flex; align-items:center; flex-wrap:wrap; gap:9px 16px; color:var(--muted); font-size:13px; height:22px; margin:0 0 14px; }
+.hero .facts { color:rgba(255,255,255,.9) !important; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+.facts span { display:flex; align-items:center; gap:5px; }
+.facts svg { color:#f4c561; }
+
+/* KHÓA CỨNG ĐÚNG 2 DÒNG OVERVIEW CÓ CHIỀU CAO ĐỒNG NHẤT */
+.hero-overview {
+  color: rgba(255,255,255,.88) !important;
+  text-shadow: 0 1px 6px rgba(0,0,0,.8);
+  line-height: 1.55;
+  font-size: 14px;
+  max-width: 480px;
+  height: 44px;
+  margin: 0 0 20px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* NÚT XEM NGAY & CHI TIẾT: NGANG HÀNG CHUẨN XÁC VỚI ẢNH NHỎ CỦA 5 PHIM */
+.cta-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  height: 46px;
+  margin: 0 0 32px 0;
+}
+.button { height:46px; padding:0 20px; border-radius:10px; font-size:13.5px; font-weight:600; display:inline-flex; align-items:center; gap:8px; transition:transform .2s,background .2s; }
+.button:hover { transform:translateY(-1px); }
+.primary { background:var(--accent); color:white; }
+.secondary,.ghost { background:var(--surface); color:var(--fg); }
+.ghost { background:rgba(255,255,255,.18); color:#fff; backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.25); }
+:root:not([data-theme="dark"]) .ghost:not(.hero-ghost),
+html[data-theme="light"] .ghost:not(.hero-ghost) {
+  background:rgba(0,0,0,.06);
+  color:var(--fg);
+  border:1px solid rgba(0,0,0,.15);
+}
+
+/* 5 THUMBNAILS Ở GÓC PHẢI: CHIỀU CAO 64px, TỶ LỆ 16:9, CROP ẢNH DƯ */
+.hero-thumbnails { display:flex; gap:12px; align-items:flex-start; flex-shrink:0; max-width:52vw; }
+.hero-thumb-btn { background:none; border:none; padding:0; cursor:pointer; display:flex; flex-direction:column; gap:7px; width:114px; text-align:left; outline:none; transition:opacity .2s ease, filter .2s ease; flex-shrink:0; }
+.hero-thumb-btn:not(.active) { opacity:.55; filter:brightness(.85); }
+.hero-thumb-btn:not(.active):hover { opacity:.95; filter:brightness(1.05); }
+
+.hero-thumb-img-wrap { width:114px; height:64px; border-radius:8px; overflow:hidden; position:relative; background:var(--surface-2); border:2px solid rgba(255,255,255,.2); box-shadow:0 4px 14px rgba(0,0,0,.45); box-sizing:border-box; }
+.hero-thumb-img-wrap img { width:100% !important; height:100% !important; object-fit:cover !important; object-position:center !important; display:block; }
+
+.hero-thumb-btn.active { opacity:1; filter:brightness(1); }
+.hero-thumb-btn.active .hero-thumb-img-wrap { border:2px solid #f5c518; box-shadow:0 0 18px rgba(245,197,24,.8), 0 4px 18px rgba(0,0,0,.7); }
+.hero-thumb-title { font-size:11.5px; font-weight:500; line-height:16px; height:16px; color:rgba(255,255,255,.75); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:114px; display:block; transition:color .2s ease; }
+.hero-thumb-btn.active .hero-thumb-title { color:#fff; font-weight:700; text-shadow:0 1px 4px rgba(0,0,0,.8); }
+
+.hero-thumb-progress-track { position:absolute; bottom:0; left:0; right:0; height:3px; background:rgba(0,0,0,.55); overflow:hidden; }
+.hero-thumb-progress-bar { height:100%; background:#f5c518; width:0%; animation:fillProgress linear forwards; }
+.hero-thumb-progress-bar.running { animation-play-state:running; }
+.hero-thumb-progress-bar.paused { animation-play-state:paused; }
+
+@media (max-width: 1250px) {
+  .hero-thumb-btn { width:96px; }
+  .hero-thumb-img-wrap { width:96px; height:54px; }
+  .hero-thumb-title { max-width:96px; font-size:10.5px; height:15px; line-height:15px; }
+  .cta-row { margin-bottom:22px; }
+}
+
+@media (max-width: 900px) {
+  .hero-bottom-bar { flex-direction:column; align-items:flex-start; gap:18px; bottom:24px; padding:0 20px; }
+  .hero-content { width:100%; max-width:100%; }
+  .hero-title { font-size:clamp(28px, 6.5vw, 44px); height:auto; min-height:60px; }
+  .hero-thumbnails { gap:8px; max-width:calc(100vw - 40px); overflow-x:auto; }
+  .hero-thumb-btn { width:72px; }
+  .hero-thumb-img-wrap { width:72px; height:40px; }
+  .hero-thumb-title { display:none; }
+  .cta-row { margin-bottom:0; }
+}
+
+@media (max-width: 540px) {
+  .hero-bottom-bar { bottom:18px; padding:0 16px; gap:14px; }
+  .hero-thumbnails { gap:6px; max-width:calc(100vw - 32px); }
+  .hero-thumb-btn { width:54px; }
+  .hero-thumb-img-wrap { width:54px; height:31px; }
+}
+
+@keyframes fillProgress { from { width:0%; } to { width:100%; } }
+@keyframes fadeInHero { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+.home-content { max-width:1600px; margin:auto; padding:85px 4vw 55px; } .details-lower { max-width:1600px; margin:auto; padding:0 4vw 55px; }.rail { margin:12px 0 53px; }.section-heading { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:17px; }.section-heading h2,.credit-block h2,.episode-heading h2 { margin:0; font-size:21px; letter-spacing:-.045em; }.section-heading a { display:flex; align-items:center; gap:4px; color:var(--muted); font-size:12px; }.rail-scroll { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(182px, 215px); overflow-x:auto; gap:18px; padding:4px 4px 10px; scrollbar-width:none; }.rail-scroll::-webkit-scrollbar { display:none; }.movie-card { min-width:0; }.poster { display:block; aspect-ratio:2/3; position:relative; overflow:hidden; border-radius:11px; background:var(--surface-2); box-shadow:0 3px 12px rgba(0,0,0,.1); cursor:pointer; }.poster > img { transition:transform .35s ease; }.movie-card:hover .poster > img { transform:scale(1.035); }.poster-actions { opacity:0; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:8px; background:rgba(0,0,0,.32); transition:opacity .22s; }.movie-card:hover .poster-actions { opacity:1; }.round-action { width:34px; height:34px; background:rgba(255,255,255,.92); color:#151515; border-radius:50%; display:grid; place-items:center; }.card-progress { position:absolute; height:3px; bottom:0; left:0; background:var(--accent); }.movie-meta { display:block; padding:10px 2px 2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }.movie-meta strong { font-size:13.5px; font-weight:600; letter-spacing:-.015em; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }.movie-meta span { color:var(--muted); display:flex; gap:5px; align-items:center; margin-top:5px; font-size:11.5px; }.movie-meta span svg { color:#e2ad40; }.movie-meta b { font-weight:400; }
+.rail-nav-arrows { display:flex; align-items:center; gap:6px; }
+.rail-arrow-btn { width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--surface); color:var(--muted); border:1px solid var(--faint); transition:all .2s ease; cursor:pointer; }
+.rail-arrow-btn:hover { background:var(--surface-2); color:var(--fg); border-color:rgba(245,158,11,0.5); }
+@media (max-width: 640px) { .rail-nav-arrows { display:none !important; } }
+.page-shell { min-height:80vh; max-width:1600px; margin:auto; padding:126px 4vw 80px; }.page-intro { max-width:500px; margin-bottom:32px; }.page-intro h1 { font-size:clamp(34px,4vw,52px); letter-spacing:-.065em; margin:8px 0 9px; line-height:1; }.page-intro p:last-child { margin:0; color:var(--muted); line-height:1.6; }.filter-row { display:flex; gap:9px; overflow:auto; padding:1px 0 27px; scrollbar-width:none; }.filter-search { height:37px; min-width:240px; display:flex; align-items:center; gap:8px; padding:0 11px; border-radius:8px; background:var(--surface); color:var(--muted); }.filter-search input { background:transparent; outline:0; border:0; min-width:0; width:100%; font-size:12px; }.filter-pill { height:37px; padding:0 14px; flex:none; border-radius:100px; background:var(--surface); display:flex; gap:6px; align-items:center; color:var(--muted); font-size:12px; }.filter-pill.active { color:#fff; background:var(--accent); }.movie-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:29px 16px; }.movie-grid .poster { box-shadow:var(--shadow); }
+.detail-hero { height:min(67vh,680px); min-height:440px; background-size:cover; background-position:center 30%; position:relative; }.detail-veil { position:absolute; inset:0; background:linear-gradient(90deg,rgba(0,0,0,.2),rgba(0,0,0,.03)),linear-gradient(0deg,var(--bg) 0%,transparent 48%); }.detail-content { max-width:1210px; padding:0 4vw; margin:-185px auto 74px; position:relative; display:flex; gap:36px; align-items:flex-end; }.detail-poster { flex:0 0 230px; aspect-ratio:2/3; position:relative; overflow:hidden; border-radius:12px; box-shadow:var(--shadow); }.detail-copy { max-width:680px; color:var(--fg); }.detail-copy .eyebrow { color:var(--muted); }.detail-copy h1 { font-size:clamp(38px,5vw,66px); line-height:1; letter-spacing:-.065em; margin:9px 0; }.original-title { color:var(--muted); margin:0 0 16px; }.detail-copy .facts { margin:18px 0; }.genre-list { display:flex; gap:7px; flex-wrap:wrap; }.genre-list span { font-size:11px; background:var(--surface); border-radius:99px; padding:6px 9px; }.overview { line-height:1.72; color:var(--muted); max-width:650px; margin:20px 0 25px; }.details-lower { max-width:1210px; }.credit-block { margin-bottom:62px; }.cast-list { display:flex; gap:30px; overflow:auto; padding-top:20px; }.cast { display:flex; align-items:center; gap:10px; min-width:160px; }.cast img { width:39px; height:39px; border-radius:50%; }.cast strong,.cast span { display:block; font-size:12px; }.cast span { color:var(--muted); margin-top:4px; font-size:11px; }.episode-section { margin-bottom:65px; }.episode-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }.episode-heading select { border:0; border-radius:7px; background:var(--surface); padding:8px 10px; font-size:12px; }.episode-list { display:grid; gap:3px; }.episode { min-height:122px; position:relative; display:grid; grid-template-columns:180px 1fr auto 22px; align-items:center; gap:18px; padding:8px 0; border-bottom:1px solid var(--faint); }.episode img { height:100px; width:180px; border-radius:7px; }.episode h3 { font-size:14px; margin:5px 0; }.episode p,.episode span,.episode time { margin:0; color:var(--muted); font-size:12px; line-height:1.5; }.episode time { align-self:start; margin-top:15px; }.episode > i { height:2px; position:absolute; bottom:-1px; left:0; background:var(--accent); }
+.large-search { max-width:780px; height:65px; border-radius:11px; display:flex; align-items:center; padding:0 20px; gap:12px; color:var(--muted); background:var(--surface); box-shadow:0 8px 30px rgba(0,0,0,.05); }.large-search input { font-size:18px; border:0; outline:0; background:transparent; flex:1; }.large-search button { display:grid; place-items:center; color:var(--muted); }.result-count { color:var(--muted); font-size:13px; margin:32px 0 20px; }.search-empty { max-width:700px; padding-top:36px; }.search-empty > div:nth-of-type(odd) { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; }.search-empty svg { color:var(--muted); }.recent-list { display:flex; flex-wrap:wrap; gap:8px; margin:13px 0 32px; }.recent-list button { padding:8px 12px; background:var(--surface); border-radius:99px; font-size:12px; color:var(--muted); }
+.watch-page { max-width:1340px; margin:auto; padding:108px 4vw 85px; background:#000; min-height:100vh; color:#fff; }
+.watch-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:17px; color:#aaa; font-size:12px; }
+.video-player { 
+  width: 100%; 
+  aspect-ratio: 16/9; 
+  background: #000; 
+  position: relative; 
+  overflow: hidden; 
+  border-radius: 12px; 
+  box-shadow: 0 16px 48px rgba(0,0,0,.6); 
+  user-select: none; 
+}
+
+.video-player video { 
+  width: 100%; 
+  height: 100%; 
+  display: block; 
+  cursor: pointer; 
+  object-fit: contain;
+}
+
+/* Các chế độ tỷ lệ khung hình video: Fit (Vừa khung), Cover (Tràn viền / Cắt viền đen), Fill (Kéo giãn) */
+.video-player video.fit-contain {
+  object-fit: contain !important;
+}
+.video-player video.fit-cover {
+  object-fit: cover !important;
+}
+.video-player video.fit-fill {
+  object-fit: fill !important;
+}
+
+/* ==========================================================================
+   CHẾ ĐỘ TOÀN MÀN HÌNH CHUẨN ĐIỆN ẢNH (EDGE-TO-EDGE FULLSCREEN)
+   Tràn viền 100% không góc bo, không khoảng đen thừa, vừa khít mọi kích thước màn hình
+   ========================================================================== */
+.video-player:fullscreen,
+.video-player:-webkit-full-screen,
+.video-player:-moz-full-screen,
+.video-player:-ms-fullscreen,
+.video-player.is-fullscreen,
+.video-player.is-web-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #000 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+/* Chế độ Web Fullscreen dự phòng cho iOS / trình duyệt chặn native fullscreen */
+.video-player.is-web-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 999999 !important;
+}
+
+.video-player:fullscreen video,
+.video-player:-webkit-full-screen video,
+.video-player:-moz-full-screen video,
+.video-player:-ms-fullscreen video,
+.video-player.is-fullscreen video,
+.video-player.is-web-fullscreen video {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  display: block !important;
+  margin: auto !important;
+}
+
+/* Tối ưu controls và padding an toàn (Safe Area Insets) khi ở chế độ toàn màn hình */
+.video-player:fullscreen .video-controls,
+.video-player:-webkit-full-screen .video-controls,
+.video-player:-moz-full-screen .video-controls,
+.video-player:-ms-fullscreen .video-controls,
+.video-player.is-fullscreen .video-controls,
+.video-player.is-web-fullscreen .video-controls {
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  padding-left: max(28px, env(safe-area-inset-left, 28px));
+  padding-right: max(28px, env(safe-area-inset-right, 28px));
+  border-radius: 0;
+  z-index: 100;
+}
+.watch-copy h1 { font-size:31px; letter-spacing:-.05em; margin:8px 0; }
+.watch-copy p:last-child { color:#aaa; line-height:1.65; margin:0; }
+.tv-watch { max-width:none; display:flex; justify-content:space-between; gap:30px; }
+.episode-nav { display:flex; gap:8px; align-items:center; }
+.episode-nav a { height:37px; display:flex; align-items:center; gap:4px; font-size:12px; border-radius:7px; padding:0 11px; background:#161616; }
+.watch-page + footer { background:#000; color:#777; }
+body:has(.watch-page) .header { background:rgba(10,10,10,0.88); border-bottom:1px solid rgba(255,255,255,0.08); }
+body:has(.watch-page) .header .logo { color:#fff; }
+body:has(.watch-page) .header .desktop-nav a { color:#a3a3a3; }
+body:has(.watch-page) .header .desktop-nav a:hover, body:has(.watch-page) .header .desktop-nav a.active { color:#fff; }
+body:has(.watch-page) .header .icon-button { color:#fff; }
+.player-wrapper { display:flex; flex-direction:column; gap:12px; width:100%; }
+.player-top-bar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; background:#121212; padding:8px 14px; border-radius:10px; }
+.player-modes { display:flex; gap:8px; }
+.mode-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; background:#222; color:#ccc; transition:all .2s; }
+.mode-btn:hover { background:#333; color:#fff; }
+.mode-btn.active { background:var(--accent); color:#fff; }
+.server-selector { display:flex; align-items:center; gap:8px; font-size:12px; color:#aaa; }
+.server-badges { display:flex; gap:6px; }
+.server-pill { padding:4px 10px; border-radius:5px; font-size:11px; background:#222; color:#bbb; transition:all .2s; }
+.server-pill.active { background:#fff; color:#000; font-weight:600; }
+.server-pill:hover { background:#333; color:#fff; }
+.player-buffering { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; background:rgba(0,0,0,.6); color:#fff; font-size:13px; z-index:2; }
+.embed-container { width:100%; height:100%; position:relative; }
+.embed-iframe { width:100%; height:100%; border:0; display:block; }
+.episode-selector-panel { margin-top:20px; background:#111; border-radius:12px; padding:18px; }
+.episode-panel-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.episode-panel-header h3 { margin:0; font-size:16px; font-weight:600; }
+.current-badge { font-size:12px; color:var(--accent); background:rgba(233,58,51,.15); padding:4px 10px; border-radius:99px; }
+.episode-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(85px, 1fr)); gap:8px; max-height:260px; overflow-y:auto; padding-right:4px; }
+.ep-btn { height:36px; display:flex; align-items:center; justify-content:center; background:#202020; border-radius:6px; font-size:12px; color:#ccc; transition:all .2s; }
+.ep-btn:hover { background:#333; color:#fff; }
+.ep-btn.active { background:var(--accent); color:#fff; font-weight:700; }
+/* BỘ ĐIỀU KHIỂN VIDEO PLAYER CHUẨN ĐIỆN ẢNH (CINEMA CONTROLS) */
+.video-controls {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 40px 18px 12px;
+  background: linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 80%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 20;
+}
+
+.video-player:hover .video-controls,
+.video-player:focus-within .video-controls,
+.video-controls.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* THANH TIẾN TRÌNH SCRUBBER HIỆN ĐẠI (YOUTUBE / NETFLIX STYLE) */
+.player-scrubber-wrap {
+  position: relative;
+  width: 100%;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+.player-scrubber-track {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  transition: height 0.15s ease;
+}
+.player-scrubber-wrap:hover .player-scrubber-track {
+  height: 6px;
+}
+.player-scrubber-progress {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: var(--accent);
+  border-radius: 4px;
+  pointer-events: none;
+}
+.player-scrubber-thumb {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%) scale(0);
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px rgba(0,0,0,0.7);
+  transition: transform 0.15s ease;
+  pointer-events: none;
+}
+.player-scrubber-wrap:hover .player-scrubber-thumb {
+  transform: translateY(-50%) scale(1);
+}
+.player-scrubber-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  z-index: 5;
+}
+.player-scrubber-tooltip {
+  position: absolute;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: rgba(18, 18, 22, 0.95);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  pointer-events: none;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+/* HÀNG NÚT ĐIỀU KHIỂN ĐẸP MẮT (CONTROLS ROW) */
+.controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.controls-left, .controls-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.control-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease, color 0.18s ease;
+}
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.08);
+}
+.control-btn:active {
+  transform: scale(0.94);
+}
+
+/* Nút tua 10s */
+.seek-control-btn {
+  position: relative;
+}
+.seek-num {
+  position: absolute;
+  font-size: 7px;
+  font-weight: 800;
+  top: 52%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Cụm chỉnh âm lượng (Hover bung ra thanh trượt mượt mà) */
+.volume-control-wrap {
+  display: flex;
+  align-items: center;
+}
+.volume-slider-bar {
+  width: 0;
+  opacity: 0;
+  margin-left: 0;
+  pointer-events: none;
+  transition: width 0.22s ease, opacity 0.22s ease, margin 0.22s ease;
+  height: 4px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  border-radius: 2px;
+  border: none;
+  background: rgba(255, 255, 255, 0.35);
+}
+.volume-control-wrap:hover .volume-slider-bar,
+.volume-control-wrap:focus-within .volume-slider-bar {
+  width: 68px;
+  opacity: 1;
+  margin-left: 8px;
+  pointer-events: auto;
+}
+
+/* Thời lượng xem */
+.time-display {
+  font-size: 12px;
+  font-weight: 500;
+  color: #eee;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+
+/* Badge Server & Tập */
+.source-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #eee;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  padding: 4px 11px;
+  border-radius: 99px;
+  white-space: nowrap;
+}
+
+/* NÚT MỞ TẬP TIẾP THEO (NEXT EPISODE) & ĐỔI TỶ LỆ KHUNG HÌNH (SCALING) */
+.next-episode-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(245, 197, 24, 0.16);
+  color: #f5c518;
+  border: 1px solid rgba(245, 197, 24, 0.45);
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+}
+
+.next-episode-pill-btn:hover {
+  background: #f5c518;
+  color: #000;
+  border-color: #f5c518;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(245, 197, 24, 0.35);
+}
+
+.next-episode-pill-btn:active {
+  transform: scale(0.95);
+}
+
+.next-control-btn {
+  color: #f5c518;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.next-control-btn:hover {
+  color: #fff;
+  transform: scale(1.18);
+}
+
+.fit-toggle-btn {
+  color: #ccc;
+  transition: all 0.2s ease;
+}
+
+.fit-toggle-btn:hover {
+  color: #fff;
+}
+
+.fit-toggle-btn.active {
+  color: #f5c518;
+  background: rgba(245, 197, 24, 0.12);
+}
+
+.next-ep-text-short {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .next-ep-text-full {
+    display: none;
+  }
+  .next-ep-text-short {
+    display: inline;
+  }
+  .next-episode-pill-btn {
+    padding: 4px 9px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 520px) {
+  .next-episode-pill-btn {
+    padding: 6px;
+    border-radius: 50%;
+  }
+  .next-ep-text-short {
+    display: none;
+  }
+}
+
+/* Nút Settings & Popup */
+.player-settings-wrapper {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.player-control-icon {
+  transition: transform 0.25s ease;
+}
+.player-control-icon:hover {
+  transform: rotate(30deg);
+}
+.player-control-icon.active {
+  color: var(--accent);
+  transform: rotate(45deg);
+}
+.player-settings-popup {
+  position: absolute;
+  bottom: 44px;
+  right: 0;
+  background: rgba(18, 18, 22, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  min-width: 220px;
+  padding: 6px 0;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.85);
+  z-index: 35;
+  animation: settingsFadeIn .18s ease-out;
+}
+@keyframes settingsFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.settings-list { display:flex; flex-direction:column; }
+.settings-header { font-size:11px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.06em; padding:6px 14px 8px; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:4px; }
+.settings-item { display:flex; justify-content:space-between; align-items:center; width:100%; padding:9px 14px; font-size:13px; color:#ddd; cursor:pointer; transition:background .15s; }
+.settings-item:hover { background:rgba(255,255,255,.09); color:#fff; }
+.settings-item-left { display:flex; align-items:center; gap:9px; }
+.settings-item-right { display:flex; align-items:center; gap:5px; color:#aaa; font-size:12px; }
+.settings-back-header { display:flex; align-items:center; gap:7px; padding:8px 12px; font-size:13px; font-weight:600; color:#fff; width:100%; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:4px; cursor:pointer; }
+.settings-back-header:hover { background:rgba(255,255,255,.06); }
+.settings-sub-options { display:flex; flex-direction:column; max-height:220px; overflow-y:auto; }
+.settings-sub-item { display:flex; align-items:center; gap:10px; width:100%; padding:9px 14px; font-size:13px; color:#ccc; cursor:pointer; transition:all .15s; }
+.settings-sub-item:hover { background:rgba(255,255,255,.09); color:#fff; }
+.settings-sub-item.active { color:var(--accent); font-weight:700; background:rgba(233,58,51,.1); }
+.check-indicator { width:16px; display:grid; place-items:center; color:var(--accent); }
+
+/* OSD Toast thông báo phím tắt */
+.player-toast-osd { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); background:rgba(0,0,0,.78); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); padding:16px 24px; border-radius:14px; display:flex; flex-direction:column; align-items:center; gap:8px; color:#fff; pointer-events:none; z-index:25; animation:toastPop .15s cubic-bezier(0.2,0.8,0.2,1); border:1px solid rgba(255,255,255,.12); box-shadow:0 12px 36px rgba(0,0,0,.6); }
+.toast-icon { display:grid; place-items:center; }
+.toast-text { font-size:14px; font-weight:700; letter-spacing:-.02em; }
+@keyframes toastPop { from { opacity:0; transform:translate(-50%, -46%) scale(.92); } to { opacity:1; transform:translate(-50%, -50%) scale(1); } }
+
+.animate-spin { animation:spin 1s linear infinite; }
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+.pagination-wrapper { margin:48px 0 24px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.pagination-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; }
+.pagination-numbers { display:flex; align-items:center; gap:6px; }
+.pagination-btn { height:40px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; font-size:13px; font-weight:600; background:var(--surface); color:var(--fg); transition:all .2s; cursor:pointer; }
+.pagination-btn.nav-btn { padding:0 14px; gap:6px; }
+.pagination-btn.num-btn { width:40px; padding:0; }
+.pagination-btn:hover:not(.disabled) { background:var(--surface-2); transform:translateY(-1px); }
+.pagination-btn.active { background:var(--accent); color:#fff; }
+.pagination-btn.disabled { opacity:.4; cursor:not-allowed; }
+.pagination-dots { padding:0 6px; color:var(--muted); font-size:14px; }
+.pagination-info { font-size:12px; color:var(--muted); text-align:center; }
+
+/* 1. Kiểu Top 10 Phim kèm Hiệu Ứng Thẻ Bài 3D */
+.top10-section { margin:30px 0 55px; }
+.top10-scroll { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(235px, 275px); overflow-x:auto; gap:26px; padding:26px 16px 40px; scrollbar-width:none; perspective:1400px; }
+.top10-scroll::-webkit-scrollbar { display:none; }
+.top10-card { min-width:0; display:flex; flex-direction:column; gap:14px; }
+.top10-card-3d { border-radius:16px; position:relative; }
+.card-3d-wrapper { transform-style:preserve-3d; will-change:transform; border-radius:16px; box-shadow:0 14px 34px -6px rgba(0,0,0,.5); transition:box-shadow .3s ease; }
+.card-3d-wrapper:hover { box-shadow:0 28px 58px -10px rgba(0,0,0,.8), 0 0 25px rgba(245,197,24,.35); z-index:10; }
+.card-3d-glare { mix-blend-mode:overlay; border-radius:inherit; pointer-events:none; }
+
+/* CHUNG 1 TỈ LỆ 2:3 CHUẨN ĐỒNG NHẤT CHO POSTER THẺ BÀI TOP 10 */
+.top10-poster-wrap { position:relative; aspect-ratio:2/3; border-radius:16px; overflow:hidden; background:var(--surface-2); box-shadow:0 12px 32px rgba(0,0,0,.4); border:1.5px solid rgba(255,255,255,.14); transition:border-color .3s ease, transform .3s ease, box-shadow .3s ease; }
+.top10-poster-wrap::after { content:""; position:absolute; inset:0; background:linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.02) 45%, transparent 80%); pointer-events:none; z-index:1; }
+.top10-card:hover .top10-poster-wrap { border-color:rgba(245,197,24,0.75); box-shadow:0 18px 42px rgba(0,0,0,.55), 0 0 24px rgba(245,197,24,.3); }
+.top10-poster { width:100%; height:100%; display:block; position:relative; }
+.top10-poster img { width:100%; height:100%; object-fit:cover; display:block; transition:transform .35s ease; }
+.top10-card:hover .top10-poster img { transform:scale(1.05); }
+.top10-poster-overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.35); opacity:0; transition:opacity .22s; z-index:2; }
+.top10-card:hover .top10-poster-overlay { opacity:1; }
+.top10-play-btn { width:50px; height:50px; border-radius:50%; background:rgba(233,58,51,.95); display:grid; place-items:center; box-shadow:0 4px 18px rgba(233,58,51,.55); }
+.top10-badges { position:absolute; bottom:10px; left:10px; display:flex; gap:5px; z-index:3; }
+.badge-pd { font-size:10.5px; font-weight:700; background:#282b36; color:#ddd; padding:2.5px 8px; border-radius:5px; }
+.badge-tm { font-size:10.5px; font-weight:700; background:#16a34a; color:#fff; padding:2.5px 8px; border-radius:5px; }
+.top10-info { display:flex; gap:14px; align-items:flex-start; }
+.top10-rank-num { font-size:64px; font-weight:900; font-style:italic; line-height:.88; color:#f5c518; letter-spacing:-2px; flex-shrink:0; text-shadow:0 3px 14px rgba(245,197,24,.35); }
+.top10-meta { display:flex; flex-direction:column; gap:4px; min-width:0; flex:1; }
+.top10-title { font-size:14.5px; font-weight:700; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--fg); }
+.top10-sub { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.top10-tags { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); margin-top:3px; flex-wrap:wrap; }
+.age-tag { font-size:9.5px; font-weight:800; background:#292d38; color:#eee; padding:1.5px 6px; border-radius:4px; }
+.quality-tag { font-size:9.5px; font-weight:700; color:var(--accent); }
+
+/* 2. Kiểu Thẻ Bài 3D Ngang Dùng Chung Style với Top 10 (Dấu ấn điện ảnh Việt) */
+.landscape-section { margin:30px 0 55px; }
+.landscape-scroll { 
+  display: flex !important; 
+  align-items: flex-start;
+  overflow-x: auto; 
+  overflow-y: hidden;
+  scrollbar-width: none; 
+  perspective: 1400px; 
+  scroll-behavior: auto;
+  padding: 24px 14px 38px; 
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+.landscape-scroll::-webkit-scrollbar { display:none; }
+
+.landscape-set-loop {
+  display: flex !important;
+  flex-shrink: 0;
+  gap: 24px;
+  margin-right: 24px;
+}
+
+.landscape-card { 
+  width: 320px;
+  flex-shrink: 0;
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+}
+.landscape-card-3d { border-radius:16px; position:relative; }
+
+/* KHUNG ẢNH NGANG 16:9 DÙNG CHUNG STYLE THẺ BÀI TOP 10 */
+.landscape-poster-wrap {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .4);
+  border: 1.5px solid rgba(255, 255, 255, .14);
+  transition: border-color .3s ease, transform .3s ease, box-shadow .3s ease;
+}
+
+.landscape-poster-wrap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 45%, transparent 80%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.landscape-card:hover .landscape-poster-wrap {
+  border-color: rgba(245, 197, 24, 0.75);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .55), 0 0 24px rgba(245, 197, 24, .3);
+}
+
+.landscape-poster {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+}
+
+.landscape-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .35s ease;
+}
+
+.landscape-card:hover .landscape-poster img {
+  transform: scale(1.05);
+}
+
+.landscape-poster-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .35);
+  opacity: 0;
+  transition: opacity .22s;
+  z-index: 2;
+}
+
+.landscape-card:hover .landscape-poster-overlay {
+  opacity: 1;
+}
+
+.landscape-play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(233, 58, 51, .95);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 18px rgba(233, 58, 51, .55);
+}
+
+.landscape-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 3;
+}
+
+.landscape-badge span {
+  font-size: 10px;
+  font-weight: 700;
+  background: #0284c7;
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+.mini-poster {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  width: 48px;
+  aspect-ratio: 2/3;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, .4);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .7);
+  z-index: 3;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.landscape-card:hover .mini-poster {
+  border-color: #f5c518;
+  transform: scale(1.08) translateY(-2px);
+}
+
+.mini-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.landscape-info { display:flex; flex-direction:column; gap:4px; padding:2px 2px; }
+.landscape-title { font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--fg); }
+.landscape-sub { font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.landscape-meta { display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); margin-top:2px; }
+.heading-link { display:inline-flex; align-items:center; gap:6px; color:var(--fg); }
+
+/* 3. KIỂU KHUNG TIÊU ĐIỂM XOAY VÒNG ELIP DẠNG 3D (SPOTLIGHT 3D ORBIT) */
+/* 3. KIỂU KHUNG TIÊU ĐIỂM XOAY VÒNG ELIP DẠNG 3D (SPOTLIGHT 3D ORBIT) */
+.spotlight-box {
+  background: #11141e;
+  border-radius: 20px;
+  padding: 24px 26px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: relative;
+  margin: 28px 0 45px;
+  border: 1px solid rgba(255,255,255,.09);
+  box-shadow: 0 16px 44px rgba(0,0,0,.45);
+  overflow: hidden;
+}
+
+/* THANH TIÊU ĐỀ & ĐIỀU HƯỚNG TRÊN CÙNG */
+.spotlight-header-bar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  z-index: 70;
+  position: relative;
+}
+
+.spotlight-header-left {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.spotlight-title-group h2,
+.spotlight-header-left h2 {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  color: #fff;
+  letter-spacing: -.02em;
+}
+
+.spotlight-view-all {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9fa6b2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .2s;
+  white-space: nowrap;
+}
+.spotlight-view-all:hover { color: #fff; }
+
+.spotlight-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.spotlight-nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.spotlight-arrow-pair {
+  display: flex;
+  gap: 6px;
+}
+.spotlight-mini-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.14);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .2s, transform .2s;
+}
+.spotlight-mini-btn:hover {
+  background: rgba(255,255,255,.24);
+  transform: scale(1.08);
+}
+.spotlight-slide-indicator {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  gap: 3px;
+  align-items: baseline;
+  color: rgba(255,255,255,.5);
+}
+.spotlight-slide-indicator .current {
+  color: #fff;
+  font-size: 15px;
+}
+
+.spotlight-dots-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.spotlight-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.2);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: width .25s ease, background .25s ease, border-radius .25s ease;
+}
+.spotlight-dot.active {
+  width: 18px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.spotlight-gesture-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,.6);
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 7px;
+  padding: 4px 9px;
+  white-space: nowrap;
+}
+
+/* SÂN KHẤU 3D PERSPECTIVE ELIP: PHỐI CẢNH 960px MẠNH MẼ & ĐĨA SÁNG ĐÁY */
+/* SÂN KHẤU 3D PERSPECTIVE ELIP: PHỦ 100% CHIỀU RỘNG */
+.spotlight-3d-stage {
+  width: 100%;
+  height: 330px;
+  position: relative;
+  perspective: 960px;
+  perspective-origin: 50% 40%;
+  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  cursor: grab;
+}
+.spotlight-3d-stage::before {
+  content: '';
+  position: absolute;
+  bottom: 8px;
+  left: 6%;
+  right: 6%;
+  height: 70px;
+  background: radial-gradient(ellipse at center, rgba(229,9,20,.22) 0%, rgba(30,35,50,.5) 45%, transparent 72%);
+  border-radius: 50%;
+  transform: rotateX(74deg);
+  pointer-events: none;
+  z-index: 0;
+}
+.spotlight-3d-stage:active {
+  cursor: grabbing;
+}
+
+/* THẺ PHIM 3D CARD */
+.spotlight-3d-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 350px;
+  margin-top: -120px;
+  margin-left: -175px;
+  transform-style: preserve-3d;
+  transition: transform .6s cubic-bezier(0.22, 1, 0.36, 1),
+              opacity .6s ease,
+              filter .6s ease;
+  cursor: pointer;
+  will-change: transform, opacity;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* THẺ HAI BÊN: PHÂN TẦNG ĐỘ SÁNG THEO VỊ TRÍ HÉ */
+.spotlight-3d-card.slot-1 {
+  filter: brightness(0.78);
+}
+.spotlight-3d-card.slot-2 {
+  filter: brightness(0.55);
+}
+.spotlight-3d-card:not(.active):hover {
+  filter: brightness(0.98);
+}
+
+/* THẺ CHÍNH GIỮA: RỘNG HƠN 435px, PHỦ GẦN HẾT CHIỀU CAO SÂN KHẤU */
+.spotlight-3d-card.active {
+  filter: brightness(1.05);
+}
+
+.spotlight-thumb-wrap {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 13px;
+  overflow: hidden;
+  background: #181b26;
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+  border: 1px solid rgba(255,255,255,.1);
+  transition: box-shadow .4s ease, border-color .4s ease;
+  -webkit-box-reflect: below 6px linear-gradient(to bottom, transparent 62%, rgba(0,0,0,0.28) 100%);
+}
+.spotlight-3d-card.slot-1 .spotlight-thumb-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.15);
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.spotlight-3d-card.slot-2 .spotlight-thumb-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.spotlight-3d-card:hover .spotlight-thumb-wrap::after {
+  opacity: 0;
+}
+.spotlight-3d-card.active .spotlight-thumb-wrap {
+  box-shadow: 0 18px 48px rgba(0,0,0,.88), 0 0 32px rgba(229,9,20,.45);
+  border: 2px solid rgba(255,255,255,.35);
+}
+.spotlight-thumb-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block;
+}
+
+.spotlight-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity .22s;
+}
+.spotlight-3d-card.active:hover .spotlight-overlay {
+  opacity: 1;
+}
+.spotlight-play-circle {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 22px rgba(229,9,20,.65);
+  transform: scale(.92);
+  transition: transform .2s ease;
+}
+.spotlight-3d-card.active:hover .spotlight-play-circle {
+  transform: scale(1.1);
+}
+
+.spotlight-badges {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 5px;
+  z-index: 2;
+}
+.badge-pd {
+  background: rgba(43, 62, 130, 0.88);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+.badge-tm {
+  background: rgba(30, 138, 62, 0.88);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+}
+.spotlight-card-rating {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,.78);
+  backdrop-filter: blur(4px);
+  color: #f4c561;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2.5px 7px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+}
+
+.spotlight-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 3px;
+}
+.spotlight-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 4px rgba(0,0,0,.8);
+  transition: font-size .3s ease;
+}
+.spotlight-3d-card.active .spotlight-title {
+  font-size: 15px;
+  font-weight: 800;
+}
+.spotlight-sub {
+  font-size: 11px;
+  color: #88909e;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.spotlight-3d-card.active .spotlight-sub {
+  color: #b0b8c6;
+}
+
+/* NÚT MŨI TÊN NỔI 2 BÊN SÂN KHẤU */
+.spotlight-stage-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(18,21,30,.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.18);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 80;
+  box-shadow: 0 8px 24px rgba(0,0,0,.55);
+  transition: transform .2s, background .2s;
+}
+.spotlight-stage-arrow.prev { left: 4px; }
+.spotlight-stage-arrow.next { right: 4px; }
+.spotlight-stage-arrow:hover {
+  background: rgba(255,255,255,.95);
+  color: #111;
+  transform: translateY(-50%) scale(1.12);
+}
+
+/* RESPONSIVE CHO KHUNG 3D COVERFLOW (SPOTLIGHT BOX) */
+@media (max-width: 1280px) {
+  .spotlight-box {
+    padding: 20px 22px 24px;
+    gap: 16px;
+  }
+  .spotlight-3d-stage {
+    height: 300px;
+  }
+  .spotlight-3d-card {
+    width: 290px;
+    margin-left: -145px;
+    margin-top: -100px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .spotlight-box {
+    padding: 18px 18px 22px;
+    gap: 14px;
+  }
+  .spotlight-3d-stage {
+    height: 275px;
+  }
+  .spotlight-3d-card {
+    width: 250px;
+    margin-left: -125px;
+    margin-top: -88px;
+  }
+  .spotlight-stage-arrow {
+    display: none; /* Ẩn nút mũi tên đè lên sân khấu khi tablet/mobile, dùng controls trên header */
+  }
+}
+
+@media (max-width: 768px) {
+  .spotlight-box {
+    padding: 16px 14px 20px;
+    border-radius: 16px;
+    margin: 20px 0 32px;
+    gap: 14px;
+  }
+  .spotlight-header-left h2 {
+    font-size: 20px;
+  }
+  .spotlight-gesture-hint,
+  .spotlight-dots-bar {
+    display: none;
+  }
+  .spotlight-3d-stage {
+    height: 285px;
+  }
+  .spotlight-3d-card {
+    width: 260px;
+    margin-left: -130px;
+    margin-top: -95px;
+  }
+  /* Trên điện thoại: chỉ còn 1 lớp mỗi bên phía sau, ẩn hoàn toàn lớp thứ 2 */
+  .spotlight-3d-card.slot-2 {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+  .spotlight-title {
+    font-size: 14.5px;
+  }
+  .spotlight-sub {
+    font-size: 11.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .spotlight-box {
+    padding: 14px 10px 18px;
+    border-radius: 14px;
+    margin: 16px 0 28px;
+    gap: 12px;
+  }
+  .spotlight-header-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .spotlight-header-left {
+    gap: 8px;
+  }
+  .spotlight-header-left h2 {
+    font-size: 18px;
+  }
+  .spotlight-view-all {
+    font-size: 12px;
+  }
+  .spotlight-3d-stage {
+    height: 270px;
+  }
+  .spotlight-3d-card {
+    width: 240px;
+    margin-left: -120px;
+    margin-top: -88px;
+  }
+  .spotlight-3d-card.slot-2 {
+    display: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    visibility: hidden !important;
+  }
+  .badge-pd, .badge-tm, .spotlight-card-rating {
+    font-size: 10px;
+    padding: 2.5px 6px;
+  }
+  .spotlight-title {
+    font-size: 14px;
+  }
+  .spotlight-sub {
+    font-size: 11px;
+  }
+}
+
+.empty-state { min-height:300px; display:grid; justify-content:center; align-content:center; text-align:center; color:var(--muted); }.empty-state svg { margin:auto; }.empty-state h2 { color:var(--fg); font-size:19px; letter-spacing:-.04em; margin:16px 0 4px; }.empty-state p { margin:0; font-size:13px; } footer { padding:29px 4vw 70px; max-width:1600px; margin:auto; display:flex; gap:18px; color:var(--muted); font-size:11px; }
+.bottom-nav { display:none; }
+
+/* Backdrop cho mobile menu */
+.mobile-menu-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:48; animation:fadeInHero .2s ease-out; }
+
+/* ==========================================================================
+   1. MỤC TIẾP TỤC XEM: CUỘN PHIM NHỰA 35MM ĐIỆN ẢNH HOÀI NIỆM (VINTAGE FILM REEL)
+   ========================================================================== */
+.film-reel-section {
+  position: relative;
+  margin-bottom: 48px;
+}
+
+.film-reel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.film-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.film-header-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  display: grid;
+  place-items: center;
+  color: #f59e0b;
+}
+
+.film-vintage-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #d97706;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-transform: uppercase;
+  margin-left: 2px;
+}
+
+.film-heading-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.film-scroll-arrows {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.film-arrow-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--faint);
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.film-arrow-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.06);
+}
+
+.film-history-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  transition: color 0.2s;
+}
+
+.film-history-link:hover {
+  color: var(--fg);
+}
+
+/* KHUNG CUỘN PHIM NHỰA LIỀN MẠCH (CONTINUOUS UNBROKEN 35MM FILMSTRIP) */
+.film-continuous-wrapper {
+  position: relative;
+  overflow: visible;
+  padding: 4px 0 16px;
+}
+
+.film-continuous-scroll {
+  display: flex;
+  align-items: flex-start;
+  gap: 0; /* LIỀN MẠCH 100% KHÔNG ĐỨT ĐOẠN */
+  overflow-x: auto;
+  padding: 10px 4px 18px;
+  scrollbar-width: none;
+  scroll-behavior: auto;
+}
+
+.film-continuous-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* SET KHUNG PHIM TRONG VÒNG LẶP VÔ TẬN (ENDLESS LOOP SET) */
+.film-set-loop {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+/* KHUNG POSTER DỰ PHÒNG KHI ẢNH LỖI (FALLBACK POSTER OVERLAY) */
+.poster-fallback-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 10px;
+  background: linear-gradient(145deg, #18181b 0%, #09090b 100%);
+  text-align: center;
+  gap: 8px;
+  z-index: 1;
+}
+
+.poster-fallback-icon {
+  color: var(--primary, #f59e0b);
+  opacity: 0.85;
+}
+
+.poster-fallback-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #f4f4f5;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ĐẦU VÀ ĐUÔI CUỘN PHIM VINTAGE (FILM LEADER TABS) */
+.film-leader-tab {
+  flex: 0 0 46px;
+  min-height: 209px;
+  align-self: stretch;
+  background: #111113;
+  border-top: 1.5px solid #282725;
+  border-bottom: 1.5px solid #282725;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 4px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.film-leader-tab.start {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-left: 1.5px solid #282725;
+  border-right: 3px solid #050506;
+}
+
+.film-leader-tab.end {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  border-right: 1.5px solid #282725;
+}
+
+.film-leader-sprocket {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.film-leader-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #f59e0b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  opacity: 0.85;
+}
+
+.film-leader-sync {
+  font-size: 7.5px;
+  color: #b45309;
+}
+
+/* TỪNG ĐƠN VỊ PHIM TRONG DẢI LIỀN MẠCH (SEAMLESS FILM FRAME UNIT) */
+.film-seamless-unit {
+  flex: 0 0 270px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  user-select: none;
+}
+
+/* KHUNG THÂN CUỘN PHIM CELLULOID */
+.film-cell-chassis {
+  position: relative;
+  background: #111113;
+  padding: 6px 6px;
+  border-top: 1.5px solid #282725;
+  border-bottom: 1.5px solid #282725;
+  border-right: 3px solid #050506; /* Đường vạch ngăn cách giữa 2 khung hình trên cuộn phim thật */
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  transition: background 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.film-seamless-unit:hover .film-cell-chassis {
+  background: #161619;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.65), 0 0 24px rgba(245, 158, 11, 0.22);
+  border-top-color: rgba(245, 158, 11, 0.5);
+  border-bottom-color: rgba(245, 158, 11, 0.5);
+  z-index: 2;
+}
+
+/* DẢI LỖ RĂNG CƯA TRÊN & DƯỚI (SPROCKET TRACKS) */
+.film-sprocket-track {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0;
+}
+
+.film-sprocket-track.top {
+  padding-bottom: 4px;
+}
+
+.film-sprocket-track.bottom {
+  padding-top: 4px;
+}
+
+.film-holes-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around; /* Khoảng cách đều nhau tuyệt đối giữa các lỗ */
+  width: 100%;
+}
+
+/* TỪNG LỖ ĐỤC RĂNG CƯA 35MM (SPROCKET HOLE CUTOUT) */
+.film-sprocket-hole {
+  width: 13px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--bg);
+  box-shadow: inset 0 1.5px 3px rgba(0, 0, 0, 0.85), 0 0.5px 0.5px rgba(255, 255, 255, 0.08);
+  border: 0.5px solid rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+  transition: background 0.25s ease;
+}
+
+/* TEM KÝ HIỆU THÔNG SỐ CUỘN PHIM VINTAGE (EDGE CODES & MARKS) */
+.film-edge-codes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #d97706;
+  opacity: 0.88;
+  line-height: 1;
+}
+
+.film-edge-brand,
+.film-edge-code {
+  color: #f59e0b;
+}
+
+.film-edge-frame {
+  color: #fbbf24;
+  letter-spacing: 1px;
+}
+
+.film-edge-gauge,
+.film-edge-fps {
+  color: #b45309;
+}
+
+/* KHUNG HÌNH PHIM CHÍNH (FILM APERTURE FRAME) */
+.film-aperture-wrap {
+  position: relative;
+  aspect-ratio: 16/9;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.85);
+}
+
+.film-aperture-link {
+  width: 100%;
+  height: 100%;
+  display: block;
+  position: relative;
+}
+
+.film-frame-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: contrast(1.04) saturate(1.04) sepia(0.06);
+  transition: transform 0.35s ease, filter 0.35s ease;
+}
+
+.film-seamless-unit:hover .film-frame-image {
+  transform: scale(1.04);
+  filter: contrast(1.08) saturate(1.15) sepia(0);
+}
+
+/* HIỆU ỨNG RỌI ĐÈN MÁY CHIẾU PHIM (PROJECTOR OVERLAY) */
+.film-projector-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.65) 100%);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.film-seamless-unit:hover .film-projector-overlay {
+  opacity: 1;
+}
+
+.film-lens-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.92);
+  color: #111;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.85), 0 4px 14px rgba(0, 0, 0, 0.6);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.film-lens-btn:hover {
+  transform: scale(1.12);
+  background: #fbbf24;
+}
+
+/* NHÃN TEM VINTAGE TẬP PHIM (VINTAGE EPISODE BADGE) */
+.film-vintage-badge {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  background: rgba(14, 14, 16, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(245, 158, 11, 0.38);
+  color: #fbbf24;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  text-transform: uppercase;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* THANH TIẾN TRÌNH DẢI ÂM QUANG HỌC (OPTICAL SOUNDTRACK TRACK) */
+.film-optical-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 4.5px;
+  background: rgba(0, 0, 0, 0.85);
+  border-top: 1px solid rgba(245, 158, 11, 0.2);
+  overflow: hidden;
+}
+
+.film-optical-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 100%);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.3s ease;
+}
+
+/* THÔNG TIN PHIM DƯỚI CUỘN PHIM (MOVIE TITLE & META) */
+.film-meta-wrap {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 8px;
+}
+
+.film-movie-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.2s ease;
+}
+
+.film-movie-title:hover {
+  color: var(--accent);
+}
+
+.film-meta-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.film-progress-pct {
+  font-weight: 600;
+  font-size: 11px;
+  color: #f59e0b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ĐIỀU CHỈNH TRÊN THIẾT BỊ DI ĐỘNG */
+@media (max-width: 640px) {
+  .film-seamless-unit {
+    flex: 0 0 220px;
+  }
+  .film-leader-tab {
+    flex: 0 0 36px;
+    min-height: 172px;
+  }
+  .film-sprocket-hole {
+    width: 10px;
+    height: 6.5px;
+  }
+  .film-edge-codes {
+    font-size: 7px;
+  }
+  .film-scroll-arrows {
+    display: none;
+  }
+}
+
+/* 2. TRANG LỊCH SỬ XEM (VINTAGE 35MM FILM REEL HISTORY PAGE) */
+.history-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.history-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.history-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Nút chuyển chế độ xem: Cuộn phim vs Lưới phim */
+.film-view-toggle {
+  display: flex;
+  align-items: center;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--faint);
+  gap: 2px;
+}
+.film-view-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+.film-view-btn.active {
+  background: var(--surface);
+  color: var(--fg);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.film-view-btn:hover:not(.active) {
+  color: var(--fg);
+}
+
+/* Các nút hành động dưới từng đơn vị phim */
+.film-unit-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.film-resume-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff !important;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: background 0.2s, transform 0.15s;
+  flex: 1;
+}
+.film-resume-btn:hover {
+  background: #ff1e2b;
+  transform: translateY(-1px);
+}
+.film-del-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--faint);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.film-del-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+}
+
+/* Chế độ hiển thị dạng lưới khung phim 35mm */
+.film-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 28px 22px;
+  margin-top: 24px;
+}
+.film-grid-unit {
+  flex: none !important;
+  width: 100% !important;
+}
+.film-grid-unit .film-cell-chassis {
+  border-left: 1.5px solid #282725;
+  border-radius: 8px;
+}
+
+/* Nút xóa toàn bộ lịch sử (Clear all history button) */
+.history-clear-btn {
+  height: 38px !important;
+  padding: 0 16px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(239, 68, 68, 0.12) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #f87171 !important;
+  cursor: pointer !important;
+  transition: background .2s, border-color .2s, color .2s, transform .15s !important;
+}
+.history-clear-btn svg {
+  color: #ef4444;
+  flex-shrink: 0;
+  transition: transform .2s;
+}
+.history-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.22) !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  color: #fff !important;
+  transform: translateY(-1px);
+}
+.history-clear-btn:hover svg {
+  transform: scale(1.1);
+}
+
+/* Chế độ sáng (Light Mode): chữ đen rõ nét theo đúng yêu cầu, icon thùng rác đỏ cảnh báo */
+:root:not([data-theme="dark"]) .history-clear-btn,
+html[data-theme="light"] .history-clear-btn {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border: 1px solid rgba(239, 68, 68, 0.35) !important;
+  color: #111827 !important;
+}
+:root:not([data-theme="dark"]) .history-clear-btn svg,
+html[data-theme="light"] .history-clear-btn svg {
+  color: #dc2626 !important;
+}
+:root:not([data-theme="dark"]) .history-clear-btn:hover,
+html[data-theme="light"] .history-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border-color: rgba(239, 68, 68, 0.55) !important;
+  color: #000000 !important;
+}
+
+
+/* 3. RESUME PLAYBACK TOAST TRONG PLAYER */
+.player-resume-toast { position:absolute; top:18px; left:18px; z-index:30; background:rgba(18,18,20,.94); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.16); box-shadow:0 8px 30px rgba(0,0,0,.65); border-radius:10px; padding:10px 14px; display:flex; align-items:center; gap:14px; max-width:calc(100% - 36px); animation:fadeInHero .3s ease-out; }
+.resume-content { display:flex; align-items:center; gap:8px; font-size:12px; color:#eee; }
+.resume-content strong { color:#fff; }
+.resume-actions { display:flex; align-items:center; gap:8px; margin-left:auto; flex-shrink:0; }
+.resume-btn-restart { height:28px; padding:0 10px; background:rgba(255,255,255,.14); border-radius:6px; color:#fff; font-size:11px; font-weight:600; transition:background .2s; }
+.resume-btn-restart:hover { background:rgba(255,255,255,.25); }
+.resume-btn-dismiss { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; color:#888; font-size:12px; transition:color .2s; }
+.resume-btn-dismiss:hover { color:#fff; }
+
+/* 4. TỐI ƯU RESPONSIVE TRÊN CÁC KÍCH THƯỚC MÀN HÌNH */
+
+/* Breakpoint 0: Màn hình laptop vừa (1024px - 1240px) */
+@media (max-width: 1240px) {
+  .header-inner { gap:20px; }
+  .desktop-nav { gap:14px; }
+  .desktop-nav a { font-size:13px; }
+}
+
+/* Breakpoint 1: Màn hình vừa / Tablet lớn (< 1024px) */
+@media (max-width: 1024px) {
+  .desktop-nav { display:none !important; }
+  .menu-button { display:grid !important; }
+  .header-inner { gap:16px; }
+  .movie-grid { grid-template-columns:repeat(4, minmax(0, 1fr)); gap:22px 14px; }
+  .rail-scroll { grid-auto-columns:minmax(165px, 195px); gap:15px; }
+  .top10-scroll { grid-auto-columns:minmax(210px, 245px); gap:20px; }
+  .top10-rank-num { font-size:56px; }
+  .landscape-card { width: 280px; }
+  .landscape-set-loop { gap: 18px; margin-right: 18px; }
+  .hero-thumbnails { max-width:65vw; }
+  .hero-thumb-btn { width:80px; }
+  .hero-thumb-img-wrap { width:80px; height:45px; }
+  .hero-thumb-title { display:none; }
+}
+
+/* Breakpoint 2: Tablet thường (< 768px) */
+@media (max-width: 768px) {
+  .movie-grid { grid-template-columns:repeat(3, minmax(0, 1fr)); gap:20px 12px; }
+  .rail-scroll { grid-auto-columns:minmax(152px, 180px); gap:14px; }
+  .top10-scroll { grid-auto-columns:minmax(185px, 215px); gap:18px; }
+  .top10-rank-num { font-size:50px; }
+  .landscape-card { width: 250px; }
+  .landscape-set-loop { gap: 16px; margin-right: 16px; }
+  .hero-thumbnails { right:16px; bottom:18px; gap:6px; max-width:85vw; }
+  .hero-thumb-btn { width:62px; }
+  .hero-thumb-img-wrap { width:62px; height:35px; }
+  .history-grid { grid-template-columns:1fr; }
+  .continue-scroll { grid-auto-columns:minmax(180px, 220px); }
+}
+
+/* Breakpoint 3: Điện thoại / Mobile (< 640px) */
+@media (max-width: 640px) {
+  .header-inner { height:60px; padding:0 16px; }
+  .desktop-nav, .avatar, .header-profile-btn { display:none !important; }
+  .menu-button { display:grid !important; }
+  .mobile-menu { display:flex; flex-direction:column; padding:10px 18px 20px; background:var(--header); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); gap:4px; position:relative; z-index:50; }
+  .mobile-menu a { padding:11px 0; font-size:14px; font-weight:500; border-bottom:1px solid var(--faint); }
+  .mobile-menu a:last-child { border-bottom:none; }
+
+  /* Cuốn sách 3D - Header Mobile */
+  .book-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .book-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Hero Banner Mobile */
+  .hero { min-height:68vh; }
+  .hero-content { padding:110px 18px 115px; max-width:100%; }
+  .hero h1, .hero-title { font-size:clamp(26px, 7.5vw, 44px) !important; line-height:1.06; margin:12px 0 14px; }
+  .hero-content > p:not(.hero-label), .hero-overview { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; font-size:13px; margin:12px 0 18px; }
+  .hero-thumbnails { right:14px; bottom:16px; gap:6px; max-width:calc(100vw - 28px); }
+  .hero-thumb-btn { width:52px; }
+  .hero-thumb-img-wrap { width:52px; height:30px; }
+  .hero-thumb-title { display:none; }
+
+  /* Nội dung trang chủ & Spacing an toàn để không bị Bottom Nav che */
+  .home-content, .page-shell, .details-lower {
+    padding-left:16px;
+    padding-right:16px;
+    padding-bottom:calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+  .rail { margin-bottom:32px; }
+  .rail-scroll { grid-auto-columns:clamp(142px, 39vw, 172px); gap:14px; }
+  .top10-scroll { grid-auto-columns:clamp(165px, 48vw, 205px); gap:16px; padding:16px 8px 24px; }
+  .top10-rank-num { font-size:46px; }
+  .top10-title { font-size:13.5px; }
+  .landscape-scroll { padding: 16px 8px 30px; }
+  .landscape-card { width: clamp(225px, 72vw, 275px); }
+  .landscape-set-loop { gap: 16px; margin-right: 16px; }
+  .landscape-card .mini-poster { width:42px; bottom:6px; left:6px; }
+  .section-heading h2 { font-size:18px; }
+  .poster-actions { display:none; }
+
+  /* Trang danh sách / Explore */
+  .page-shell { padding:88px 16px 80px; }
+  .page-intro { margin-bottom:22px; }
+  .page-intro h1 { font-size:32px; }
+  .filter-row { margin:0 -16px; padding:2px 16px 18px; }
+  .filter-search { min-width:200px; }
+  .movie-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:22px 11px; }
+
+  /* Trang chi tiết phim (Detail Page Mobile) */
+  .detail-hero { min-height:340px; height:48vh; }
+  .detail-content { padding:0 16px; margin:-70px auto 35px; align-items:flex-start; gap:16px; }
+  .detail-poster { flex:0 0 110px; border-radius:8px; }
+  .detail-copy h1 { font-size:clamp(24px, 6.5vw, 34px); }
+  .detail-copy .eyebrow,.detail-copy .original-title { display:none; }
+  /* HIỂN THỊ TÓM TẮT PHIM TRÊN MOBILE */
+  .detail-copy .overview {
+    display:-webkit-box !important;
+    -webkit-line-clamp:4;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    font-size:12.5px;
+    line-height:1.6;
+    margin:12px 0 16px;
+    color:var(--muted);
+  }
+  .detail-copy .facts { margin:6px 0 10px; font-size:11px; gap:6px 10px; }
+  .genre-list span { padding:4px 7px; font-size:10px; }
+  .detail-copy .button { height:38px; padding:0 12px; font-size:11.5px; }
+  .cast-list { gap:16px; }
+
+  /* Trang xem phim (Watch Page Mobile) */
+  .watch-page { padding:72px 0 35px !important; }
+  .watch-heading, .watch-copy { margin-left:14px; margin-right:14px; }
+  .watch-heading { margin-bottom:10px; font-size:11px; }
+  .player-top-bar { padding:6px 10px; }
+  .mode-btn { padding:5px 9px; font-size:11px; }
+  .server-selector { font-size:11px; }
+  .server-pill { padding:3px 7px; font-size:10px; }
+
+  /* Controls trên Player Mobile */
+  .video-player { aspect-ratio:16/9; }
+  .video-controls { opacity:1; padding:18px 10px 8px !important; }
+  .controls-row { gap:8px !important; }
+  .controls-row button svg { width:17px; height:17px; }
+  .seek-num { font-size:8px; }
+  .volume-slider-bar { display:none !important; }
+  .source-badge { display:none !important; }
+  .time-display { font-size:10px !important; margin-left:2px; }
+  .player-settings-popup { right:-10px; max-width:calc(100vw - 32px); }
+  .player-resume-toast { top:10px; left:10px; right:10px; max-width:none; flex-direction:column; align-items:flex-start; gap:8px; padding:8px 12px; }
+  .resume-actions { width:100%; justify-content:space-between; margin-left:0; }
+
+  /* ========================================================================= */
+  /* THANH ĐIỀU HƯỚNG DI ĐỘNG DẠNG KÍNH NỔI VIÊN THUỐC (FLOATING GLASS DOCK)    */
+  /* Tự động thu nhỏ khi vuốt lên và phóng to lại khi vuốt xuống               */
+  /* ========================================================================= */
+  .bottom-nav {
+    position: fixed;
+    bottom: max(16px, env(safe-area-inset-bottom, 16px));
+    left: 50%;
+    transform: translateX(-50%) scale(1);
+    transform-origin: center bottom;
+    z-index: 55;
+    display: flex !important;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    max-width: calc(100vw - 28px);
+    pointer-events: none;
+    transition: transform 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+                bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.25s ease;
+  }
+
+  /* Khối đảo kính nổi bo tròn viên thuốc (Frosted Glassmorphic Island) */
+  .bottom-nav-island {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 7px 8px;
+    background: rgba(18, 18, 22, 0.80);
+    backdrop-filter: blur(28px) saturate(190%);
+    -webkit-backdrop-filter: blur(28px) saturate(190%);
+    border: 1.2px solid rgba(255, 255, 255, 0.16);
+    border-radius: 9999px;
+    box-shadow: 
+      0 16px 42px rgba(0, 0, 0, 0.65),
+      0 4px 14px rgba(0, 0, 0, 0.4),
+      inset 0 1px 1px rgba(255, 255, 255, 0.22);
+    pointer-events: auto;
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .bottom-nav-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 50px;
+    padding: 8px 6px;
+    border-radius: 9999px;
+    color: #999;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Nền viên thuốc phát sáng cho tab đang chọn (như mẫu ảnh thiết kế) */
+  .bottom-nav-pill-bg {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    opacity: 0;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+
+  .bottom-nav-icon-box {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    transition: transform 0.25s ease;
+  }
+
+  .nav-icon {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s ease;
+  }
+
+  .nav-label {
+    position: relative;
+    z-index: 2;
+    font-size: 9.5px;
+    font-weight: 500;
+    margin-top: 3px;
+    line-height: 1;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+  }
+
+  /* Tab đang chọn: Hiệu ứng ánh sáng lóe (Soft Diffused Glow / Ambient Flare) không viền cứng */
+  .bottom-nav-item.active {
+    color: #fff;
+  }
+
+  .bottom-nav-item.active .bottom-nav-pill-bg {
+    opacity: 1;
+    inset: 1px -3px;
+    background: radial-gradient(ellipse at center, rgba(245, 197, 24, 0.42) 0%, rgba(245, 197, 24, 0.18) 38%, transparent 72%);
+    border: 0;
+    box-shadow: none;
+    filter: blur(4px);
+  }
+
+  .bottom-nav-item.active .nav-icon {
+    transform: scale(1.1);
+    color: #f5c518;
+    filter: drop-shadow(0 0 8px rgba(245, 197, 24, 0.75));
+  }
+
+  .bottom-nav-item.active .nav-label {
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(245, 197, 24, 0.4);
+  }
+
+  /* ========================================================================= */
+  /* TRẠNG THÁI THU NHỎ KHI VUỐT LÊN (COMPACT FLOATING PILL DOCK)               */
+  /* Giảm mạnh chiều ngang, ẩn chữ chỉ để lại cụm icon siêu nhỏ gọn             */
+  /* ========================================================================= */
+  .bottom-nav.compact {
+    transform: translateX(-50%) scale(0.85);
+    bottom: max(10px, env(safe-area-inset-bottom, 10px));
+  }
+
+  .bottom-nav.compact .bottom-nav-island {
+    padding: 3px;
+    gap: 0;
+    background: rgba(14, 14, 18, 0.86);
+    box-shadow: 
+      0 10px 28px rgba(0, 0, 0, 0.72),
+      0 2px 8px rgba(0, 0, 0, 0.5),
+      inset 0 1px 1px rgba(255, 255, 255, 0.18);
+  }
+
+  .bottom-nav.compact .bottom-nav-item {
+    width: 34px;
+    min-width: 34px;
+    padding: 5px 0;
+  }
+
+  .bottom-nav.compact .nav-label {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    overflow: hidden;
+    transform: translateY(4px);
+    pointer-events: none;
+  }
+
+  .bottom-nav.compact .bottom-nav-item.active .nav-icon {
+    transform: scale(1.12);
+  }
+
+  /* Ẩn Bottom Nav trong trang xem phim để không che video */
+  body:has(.watch-page) .bottom-nav { display:none !important; }
+  footer { display:none; }
+}
+
+/* ========================================================================= */
+/* 4. GIAO DIỆN CUỐN SÁCH ĐIỆN ẢNH 3D MỞ ĐÔI (3D CINEMA FLIPBOOK SHOWCASE)   */
+/* ========================================================================= */
+
+.book-showcase-section {
+  margin: 40px 0 55px;
+  position: relative;
+  outline: none;
+}
+
+.book-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.book-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.book-title-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: rgba(229,9,20,.12);
+  border: 1px solid rgba(229,9,20,.25);
+  padding: 4px 10px;
+  border-radius: 6px;
+  width: fit-content;
+}
+.book-icon-glow {
+  color: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+
+.book-header-left h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--fg);
+  margin: 0;
+  letter-spacing: -.02em;
+}
+
+.book-header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Bộ điều hướng lật trang trên header */
+.book-turn-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card-bg, rgba(255,255,255,.08));
+  border: 1px solid var(--border, rgba(255,255,255,.18));
+  border-radius: 30px;
+  padding: 4px 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+}
+
+/* Nút Bật/Tắt tự động lật */
+.book-autoplay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.2));
+  color: var(--fg);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.book-autoplay-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.03);
+}
+.book-autoplay-btn.active {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.45);
+  color: #10b981;
+}
+.book-autoplay-btn.active:hover {
+  background: rgba(16, 185, 129, 0.25);
+  border-color: rgba(16, 185, 129, 0.65);
+}
+.autoplay-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ef4444;
+}
+.autoplay-dot.pulse {
+  background: #10b981;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: autoplayPulse 1.8s infinite;
+}
+@keyframes autoplayPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+.book-controls-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--border, rgba(255, 255, 255, 0.2));
+  margin: 0 2px;
+}
+
+.book-nav-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border, rgba(255,255,255,.15));
+  background: var(--muted-bg, rgba(255,255,255,.1));
+  color: var(--fg);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background .2s, transform .2s, color .2s;
+}
+.book-nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.08);
+  border-color: var(--accent);
+}
+.book-nav-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.book-page-indicator {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0 6px;
+  user-select: none;
+}
+.book-cur-page { color: var(--fg); font-weight: 800; }
+.book-page-slash { color: var(--muted); opacity: .6; }
+.book-max-page { color: var(--muted); }
+
+.book-view-all {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color .2s;
+}
+.book-view-all:hover { color: var(--fg); }
+
+/* SÂN KHẤU 3D PERSPECTIVE (3D BOOK STAGE) */
+.book-3d-stage {
+  position: relative;
+  width: 100%;
+  perspective: 2000px;
+  perspective-origin: 50% 25%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  padding: 24px 0 40px;
+}
+
+/* Nút lật trang nổi 2 bên mép sách */
+.book-side-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(18, 21, 32, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  z-index: 60;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.8);
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+.book-side-arrow.prev { left: -24px; }
+.book-side-arrow.next { right: -24px; }
+.book-side-arrow:hover:not(:disabled) {
+  background: #fff;
+  color: #111;
+  transform: translateY(-50%) scale(1.12);
+  border-color: #fff;
+}
+.book-side-arrow:disabled {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* KHUNG BÌA SÁCH MỞ ĐÔI (THE OPEN BOOK HARDCOVER CASING) */
+.book-spread-container {
+  position: relative;
+  width: 100%;
+  max-width: 1440px;
+  min-height: 490px;
+  display: flex;
+  background: linear-gradient(145deg, #07090f 0%, #111420 50%, #06080e 100%);
+  border-radius: 20px;
+  padding: 12px 24px 16px; /* Bìa da vươn rộng ra ngoài tập trang giấy */
+  box-shadow: 
+    0 42px 95px -15px rgba(0, 0, 0, 0.96),
+    0 20px 45px -8px rgba(0, 0, 0, 0.85),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.14),
+    inset 0 0 40px rgba(0, 0, 0, 0.95);
+  transform: rotateX(6.5deg);
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.book-spread-container:hover {
+  transform: rotateX(3.5deg);
+}
+
+/* LỚP GIẤY MÔ PHỎNG ĐỘ DÀY TẬP TRANG SÁCH (BOOK BLOCK EDGES) */
+.book-edge-shadow {
+  position: absolute;
+  top: 14px;
+  bottom: 14px;
+  width: 14px;
+  z-index: 15;
+  pointer-events: none;
+}
+.book-edge-shadow.left-edge {
+  left: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    #fdfbf7 0px,
+    #e8dfce 1px,
+    #aba08a 2px,
+    #f4efe2 3px
+  );
+  border-left: 2px solid #fff;
+  border-radius: 6px 0 0 6px;
+  box-shadow: -5px 0 12px rgba(0, 0, 0, 0.85);
+}
+.book-edge-shadow.right-edge {
+  right: 2px;
+  background: repeating-linear-gradient(
+    to left,
+    #fdfbf7 0px,
+    #e8dfce 1px,
+    #aba08a 2px,
+    #f4efe2 3px
+  );
+  border-right: 2px solid #fff;
+  border-radius: 0 6px 6px 0;
+  box-shadow: 5px 0 12px rgba(0, 0, 0, 0.85);
+}
+.book-bottom-pages {
+  position: absolute;
+  bottom: 3px;
+  left: 24px;
+  right: 24px;
+  height: 7px;
+  background: repeating-linear-gradient(
+    to bottom,
+    #f5f0e3 0px,
+    #8e846f 1px,
+    #ded6c4 2px
+  );
+  pointer-events: none;
+  z-index: 10;
+  border-radius: 0 0 6px 6px;
+}
+
+/* ========================================================================= */
+/* CÁC LỚP TRANG GIẤY XẾP CHỒNG PHÍA SAU (STACKED PAGES UNDERNEATH)          */
+/* ========================================================================= */
+.book-page-stack {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: calc(50% - 14px);
+  pointer-events: none;
+  z-index: 4;
+}
+.left-page-stack {
+  left: 14px;
+}
+.right-page-stack {
+  right: 14px;
+}
+
+.stack-page {
+  position: absolute;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+  transition: all 0.3s ease;
+}
+
+/* 4 TẦNG TRANG GIẤY PHÍA DƯỚI - MÀU GIẤY SÁNG RÕ RỆT (IVORY PARCHMENT EDGES) */
+.left-page-stack .page-depth-4 {
+  left: 0px;
+  right: 14px;
+  top: 4px;
+  bottom: 6px;
+  background: linear-gradient(90deg, #fdfbf7 0%, #ebe3d0 4px, #181d2e 16px, #0e111a 100%);
+  border-left: 3.5px solid #fffdfa;
+  border-top: 1.5px solid #eae2d0;
+  border-bottom: 1.5px solid #ded5c2;
+  border-radius: 14px 0 0 14px;
+  transform: rotate(-0.7deg);
+  transform-origin: right center;
+  box-shadow: -9px 11px 24px rgba(0, 0, 0, 0.92);
+}
+
+.left-page-stack .page-depth-3 {
+  left: 6px;
+  right: 10px;
+  top: 7px;
+  bottom: 8px;
+  background: linear-gradient(90deg, #f3eee3 0%, #e0d7c3 3.5px, #161a29 14px, #0d0f18 100%);
+  border-left: 2.5px solid #f8f3e6;
+  border-top: 1.5px solid #e5dcce;
+  border-bottom: 1.5px solid #d8cfbe;
+  border-radius: 12px 0 0 12px;
+  transform: rotate(-0.5deg);
+  transform-origin: right center;
+  box-shadow: -7px 9px 20px rgba(0, 0, 0, 0.84);
+}
+
+.left-page-stack .page-depth-2 {
+  left: 12px;
+  right: 6px;
+  top: 9px;
+  bottom: 10px;
+  background: linear-gradient(90deg, #ebe4d5 0%, #d4cbba 3px, #151926 12px, #0c0e16 100%);
+  border-left: 2px solid #f0ebd9;
+  border-top: 1px solid #ddd4c4;
+  border-bottom: 1px solid #d0c7b4;
+  border-radius: 11px 0 0 11px;
+  transform: rotate(-0.3deg);
+  transform-origin: right center;
+  box-shadow: -5px 7px 16px rgba(0, 0, 0, 0.76);
+}
+
+.left-page-stack .page-depth-1 {
+  left: 18px;
+  right: 2px;
+  top: 11px;
+  bottom: 12px;
+  background: linear-gradient(90deg, #e2dac7 0%, #cac0ad 2.5px, #141724 10px, #0a0c14 100%);
+  border-left: 1.5px solid #e8e1cf;
+  border-top: 1px solid #d5cbba;
+  border-radius: 10px 0 0 10px;
+  box-shadow: -3px 5px 12px rgba(0, 0, 0, 0.68);
+}
+
+/* Stack bên phải */
+.right-page-stack .page-depth-4 {
+  right: 0px;
+  left: 14px;
+  top: 4px;
+  bottom: 6px;
+  background: linear-gradient(270deg, #fdfbf7 0%, #ebe3d0 4px, #181d2e 16px, #0e111a 100%);
+  border-right: 3.5px solid #fffdfa;
+  border-top: 1.5px solid #eae2d0;
+  border-bottom: 1.5px solid #ded5c2;
+  border-radius: 0 14px 14px 0;
+  transform: rotate(0.7deg);
+  transform-origin: left center;
+  box-shadow: 9px 11px 24px rgba(0, 0, 0, 0.92);
+}
+
+.right-page-stack .page-depth-3 {
+  right: 6px;
+  left: 10px;
+  top: 7px;
+  bottom: 8px;
+  background: linear-gradient(270deg, #f3eee3 0%, #e0d7c3 3.5px, #161a29 14px, #0d0f18 100%);
+  border-right: 2.5px solid #f8f3e6;
+  border-top: 1.5px solid #e5dcce;
+  border-bottom: 1.5px solid #d8cfbe;
+  border-radius: 0 12px 12px 0;
+  transform: rotate(0.5deg);
+  transform-origin: left center;
+  box-shadow: 7px 9px 20px rgba(0, 0, 0, 0.84);
+}
+
+.right-page-stack .page-depth-2 {
+  right: 12px;
+  left: 6px;
+  top: 9px;
+  bottom: 10px;
+  background: linear-gradient(270deg, #ebe4d5 0%, #d4cbba 3px, #151926 12px, #0c0e16 100%);
+  border-right: 2px solid #f0ebd9;
+  border-top: 1px solid #ddd4c4;
+  border-bottom: 1px solid #d0c7b4;
+  border-radius: 0 11px 11px 0;
+  transform: rotate(0.3deg);
+  transform-origin: left center;
+  box-shadow: 5px 7px 16px rgba(0, 0, 0, 0.76);
+}
+
+.right-page-stack .page-depth-1 {
+  right: 18px;
+  left: 2px;
+  top: 11px;
+  bottom: 12px;
+  background: linear-gradient(270deg, #e2dac7 0%, #cac0ad 2.5px, #141724 10px, #0a0c14 100%);
+  border-right: 1.5px solid #e8e1cf;
+  border-top: 1px solid #d5cbba;
+  border-radius: 0 10px 10px 0;
+  box-shadow: 3px 5px 12px rgba(0, 0, 0, 0.68);
+}
+
+/* RÃNH GÁY SÁCH TRUNG TÂM (CENTER 3D SPINE VALLEY) */
+.book-spine-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 28px;
+  margin-left: -14px;
+  background: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.96) 0%, 
+    rgba(14, 17, 26, 0.75) 22%, 
+    rgba(38, 44, 62, 0.92) 47%, 
+    rgba(60, 68, 92, 1) 50%,
+    rgba(38, 44, 62, 0.92) 53%,
+    rgba(14, 17, 26, 0.75) 78%, 
+    rgba(0, 0, 0, 0.96) 100%
+  );
+  box-shadow: 0 0 18px rgba(0, 0, 0, 0.96), inset 0 0 10px rgba(0, 0, 0, 0.85);
+  z-index: 35;
+  pointer-events: none;
+  border-radius: 4px;
+}
+.book-spine-divider::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+}
+.book-spine-divider::after {
+  content: "";
+  position: absolute;
+  bottom: 12px;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  background: rgba(255, 215, 0, 0.45);
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.3);
+}
+
+/* DÂY RUY-BĂNG ĐÁNH DẤU SÁCH (BOOKMARK SILK RIBBON) */
+.book-ribbon-bookmark {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 18px;
+  margin-left: -9px;
+  height: calc(100% + 30px);
+  background: linear-gradient(180deg, 
+    #7f1d1d 0%, 
+    #b91c1c 25%, 
+    #ef4444 60%, 
+    #dc2626 90%, 
+    #991b1b 100%
+  );
+  box-shadow: 4px 8px 22px rgba(0, 0, 0, 0.88);
+  z-index: 45;
+  pointer-events: none;
+  border-radius: 2px 2px 0 0;
+}
+.book-ribbon-bookmark .ribbon-tail {
+  position: absolute;
+  bottom: -16px;
+  left: 0;
+  width: 100%;
+  height: 18px;
+  background: #991b1b;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 65%, 0 100%);
+}
+
+/* TRANG SÁCH PHẲNG TỰ NHIÊN (CLEAN FLAT BOOK PAGES - KHÔNG BỊ PHỒNG) */
+.book-page {
+  flex: 1 1 0%;
+  width: 50%;
+  min-width: 0;
+  min-height: 470px;
+  background: #141724;
+  padding: 24px 28px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  z-index: 10;
+  transition: filter 0.3s ease;
+}
+
+/* Trang trái phẳng, bóng êm nhẹ ở sát rãnh gáy */
+.book-page-left {
+  margin-left: 20px;
+  border-radius: 6px 0 0 6px;
+  background: #141724;
+  box-shadow: inset -22px 0 30px -8px rgba(0, 0, 0, 0.65);
+}
+
+/* Trang phải phẳng, bóng êm nhẹ ở sát rãnh gáy */
+.book-page-right {
+  margin-right: 20px;
+  border-radius: 0 6px 6px 0;
+  background: #141724;
+  box-shadow: inset 22px 0 30px -8px rgba(0, 0, 0, 0.65);
+}
+
+/* Tắt hoàn toàn lớp lưới ánh sáng gây phồng vồng trang giấy theo yêu cầu của user */
+.book-page-curve-mesh {
+  display: none !important;
+}
+
+/* THANH ĐẦU TRANG & CHÂN TRANG SÁCH */
+.book-page-top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: rgba(255,255,255,.55);
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  z-index: 15;
+}
+.book-page-top-bar .page-chapter {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #fff;
+}
+.book-page-top-bar.right-top-bar .page-chapter {
+  color: var(--accent);
+}
+
+.book-page-bottom-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: rgba(255,255,255,.5);
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
+  position: relative;
+  z-index: 15;
+}
+.book-page-number {
+  font-size: 13px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: .04em;
+  position: relative;
+  z-index: 20;
+}
+.book-page-left .book-page-bottom-bar .book-page-number {
+  margin-left: 0;
+}
+.book-page-right .book-page-bottom-bar .book-page-number {
+  margin-right: 26px;
+}
+.book-edition {
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 20;
+}
+
+/* GÓC TRANG SÁCH GẤP 3D (CHÍNH XÁC QUY TẮC GẤP LẬT VÀO TRONG - CHỈ Ở TRANG PHẢI / TRANG DƯỚI) */
+.book-corner-curl {
+  position: absolute;
+  bottom: 0;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  z-index: 30;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.4, 1), filter 0.25s ease;
+}
+
+.book-corner-curl:hover {
+  transform: scale(1.15);
+  filter: brightness(1.12);
+}
+
+/* Góc dưới bên phải gấp lật lên hướng vào trong (Up & Left) để lật tiếp sang trang sau */
+.book-corner-curl.right-curl {
+  right: 0;
+}
+/* Vết khuyết góc ngoài để lộ lớp giấy ngà của trang bên dưới */
+.book-corner-curl.right-curl::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, #ede7db 0%, #ded6c4 100%);
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.4);
+  clip-path: polygon(100% 0%, 100% 100%, 0% 100%);
+}
+/* Miếng nếp gấp giấy màu ngà lật vào trong */
+.book-corner-curl.right-curl::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(-135deg, #fdfbf7 0%, #ebe4d5 60%, #c5ba9f 100%);
+  clip-path: polygon(0% 0%, 100% 0%, 0% 100%);
+  filter: drop-shadow(-2px 2px 4px rgba(0, 0, 0, 0.65));
+  border-radius: 4px 0 0 0;
+}
+
+/* LƯỚI 3 THẺ PHIM TRONG TRANG (BOOK PAGE GRID - BALANCED & EVEN) */
+.book-page-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 16px !important;
+  padding: 14px 0 !important;
+  flex: 1;
+  width: 100% !important;
+  align-items: start !important;
+  position: relative;
+  z-index: 15;
+}
+
+.book-movie-item {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  cursor: pointer;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.book-movie-item:hover {
+  transform: translateY(-5px);
+}
+
+.book-movie-poster-wrap {
+  position: relative !important;
+  width: 100% !important;
+  aspect-ratio: 2 / 3 !important;
+  height: auto !important;
+  max-height: 235px !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  background: #191c28 !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.book-movie-item:hover .book-movie-poster-wrap {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.9), 0 0 22px rgba(229, 9, 20, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+}
+.book-movie-poster-wrap img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+  transition: transform 0.35s ease;
+}
+.book-movie-item:hover .book-movie-poster-wrap img {
+  transform: scale(1.06);
+}
+
+/* Huy hiệu trên poster */
+.book-movie-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+.book-badge-full {
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,.15);
+}
+.book-badge-sub {
+  background: var(--accent);
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+}
+
+.book-movie-rating {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0,0,0,.75);
+  backdrop-filter: blur(4px);
+  color: #fbbf24;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  z-index: 2;
+  border: 1px solid rgba(251,191,36,.25);
+}
+
+/* Nút Play overlay */
+.book-movie-play-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity .25s ease;
+  z-index: 3;
+}
+.book-movie-item:hover .book-movie-play-overlay {
+  opacity: 1;
+}
+.book-play-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 20px rgba(229,9,20,.8);
+  transform: scale(.85);
+  transition: transform .25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.book-movie-item:hover .book-play-circle {
+  transform: scale(1);
+}
+
+.book-movie-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  overflow: hidden !important;
+}
+.book-movie-title {
+  font-size: 13.5px !important;
+  font-weight: 700 !important;
+  color: #fff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  width: 100% !important;
+  display: block !important;
+  margin: 0 !important;
+  transition: color 0.2s;
+}
+.book-movie-item:hover .book-movie-title {
+  color: var(--accent) !important;
+}
+.book-movie-meta {
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+.meta-sep { opacity: .4; }
+
+/* ========================================================================= */
+/* TỜ LẬT ĐỘNG 3D KHI CHUYỂN TRANG (THE ANIMATED 3D FLIPPING LEAF)          */
+/* ========================================================================= */
+.book-flipping-leaf {
+  position: absolute;
+  top: 12px;
+  bottom: 16px;
+  width: calc(50% - 38px);
+  height: calc(100% - 28px);
+  transform-style: preserve-3d;
+  z-index: 50;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* ========================================================================= */
+/* TỜ LẬT ĐỘNG 3D DỌC THEO GÁY SÁCH (VERTICAL 3D PAGE FLIP)                  */
+/* ========================================================================= */
+.book-flipping-leaf {
+  position: absolute;
+  top: 12px;
+  bottom: 16px;
+  width: calc(50% - 38px);
+  height: calc(100% - 28px);
+  transform-style: preserve-3d;
+  z-index: 50;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* Lật dọc sang trang tiếp theo (Next Page): Lật từ phải sang trái quanh trục dọc sống sách */
+.book-flipping-leaf.flip-forward {
+  left: 50%;
+  transform-origin: left center;
+  animation: flipVerticalForward 0.65s cubic-bezier(0.3, 0.05, 0.25, 1) forwards;
+}
+
+/* Lật dọc về trang trước đó (Prev Page): Lật từ trái sang phải quanh trục dọc sống sách */
+.book-flipping-leaf.flip-backward {
+  left: 38px;
+  transform-origin: right center;
+  animation: flipVerticalBackward 0.65s cubic-bezier(0.3, 0.05, 0.25, 1) forwards;
+}
+
+/* Chuyển động lật dọc mượt mà tới (Smooth Vertical Page Flip Forward) */
+@keyframes flipVerticalForward {
+  0% {
+    transform: rotateY(-5deg) translateZ(0px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    /* Đứng thẳng đứng 90 độ vuông góc mặt bàn, nhấc nhẹ 3D qua gáy sách */
+    transform: rotateY(-90deg) translateZ(35px) scale(1.015);
+    box-shadow: 0 35px 75px rgba(0, 0, 0, 0.85);
+  }
+  100% {
+    /* Áp phẳng hoàn toàn lên trang trái */
+    transform: rotateY(-175deg) translateZ(0px) scale(1);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* Chuyển động lật dọc mượt mà lùi (Smooth Vertical Page Flip Backward) */
+@keyframes flipVerticalBackward {
+  0% {
+    transform: rotateY(5deg) translateZ(0px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    /* Đứng thẳng đứng 90 độ vuông góc mặt bàn, nhấc nhẹ 3D qua gáy sách */
+    transform: rotateY(90deg) translateZ(35px) scale(1.015);
+    box-shadow: 0 35px 75px rgba(0, 0, 0, 0.85);
+  }
+  100% {
+    /* Áp phẳng hoàn toàn lên trang phải */
+    transform: rotateY(175deg) translateZ(0px) scale(1);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+}
+
+.leaf-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: #141724;
+  padding: 24px 28px 22px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  will-change: transform, opacity;
+}
+
+.leaf-front {
+  border-radius: 0 6px 6px 0;
+  background: linear-gradient(270deg, #171b28 0%, #141724 30%, #111420 80%, #0a0c13 100%);
+  filter: drop-shadow(8px 12px 24px rgba(0, 0, 0, 0.9));
+}
+
+.leaf-back {
+  border-radius: 6px 0 0 6px;
+  background: linear-gradient(90deg, #171b28 0%, #141724 30%, #111420 80%, #0a0c13 100%);
+  filter: drop-shadow(-8px 12px 24px rgba(0, 0, 0, 0.9));
+  transform: rotateY(180deg);
+}
+
+/* Ánh sáng & bóng đổ quét dọc theo thân trang sách khi lật */
+.leaf-overlay-shadow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.1) 60%, rgba(255, 255, 255, 0.12) 100%);
+  animation: leafVerticalShine 0.65s cubic-bezier(0.3, 0.05, 0.25, 1) forwards;
+}
+.leaf-overlay-shadow.back-shadow {
+  background: linear-gradient(to left, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.1) 60%, rgba(255, 255, 255, 0.12) 100%);
+  animation: leafVerticalShine 0.65s cubic-bezier(0.3, 0.05, 0.25, 1) forwards;
+}
+
+@keyframes leafVerticalShine {
+  0% {
+    opacity: 0.05;
+  }
+  48% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.05;
+  }
+}
+
+/* RESPONSIVE CHO CUỐN SÁCH 3D */
+@media (max-width: 1080px) {
+  .book-spread-container { 
+    min-height: 420px; 
+    padding: 10px 16px 14px;
+    transform: rotateX(4deg);
+  }
+  .book-page { padding: 18px 20px 16px; }
+  .book-page-left { margin-left: 10px; }
+  .book-page-right { margin-right: 10px; }
+  .book-page-grid { gap: 12px !important; }
+  .book-movie-title { font-size: 12.5px !important; }
+  .book-movie-poster-wrap { max-height: 200px !important; }
+}
+
+@media (max-width: 860px) {
+  .book-spread-container { 
+    min-height: 380px; 
+    transform: none; 
+    padding: 8px;
+  }
+  .book-page { 
+    padding: 14px 14px 12px; 
+    transform: none !important;
+  }
+  .book-page-left { margin-left: 0; }
+  .book-page-right { margin-right: 0; }
+  .book-page-stack { display: none; }
+  .book-page-grid { gap: 8px !important; }
+  .book-movie-badges { top: 4px; left: 4px; }
+  .book-movie-rating { top: 4px; right: 4px; font-size: 9px; }
+  .book-movie-poster-wrap { max-height: 170px !important; }
+  .book-side-arrow { display: none; }
+}
+
+/* Chuyển động lật dọc trên điện thoại (Mobile Vertical Flip Forward / Backward) */
+@keyframes flipMobileVerticalForward {
+  0% {
+    transform: rotateX(0deg) translateZ(0px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    transform: rotateX(90deg) translateZ(45px) scale(1.02);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.95);
+  }
+  100% {
+    transform: rotateX(180deg) translateZ(0px) scale(1);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@keyframes flipMobileVerticalBackward {
+  0% {
+    transform: rotateX(0deg) translateZ(0px);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+  50% {
+    transform: rotateX(-90deg) translateZ(45px) scale(1.02);
+    box-shadow: 0 -30px 60px rgba(0, 0, 0, 0.95);
+  }
+  100% {
+    transform: rotateX(-180deg) translateZ(0px) scale(1);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (max-width: 640px) {
+  .book-spread-container {
+    flex-direction: column;
+    min-height: auto;
+    transform: none;
+    padding: 8px;
+    perspective: 1600px;
+    -webkit-perspective: 1600px;
+  }
+  .book-page {
+    width: 100%;
+    min-height: 320px;
+    border-radius: 12px;
+    transform: none !important;
+  }
+  .book-page-left { border-radius: 12px 12px 0 0; margin-left: 0; }
+  .book-page-right { border-radius: 0 0 12px 12px; margin-right: 0; }
+  .book-spine-divider {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 4px;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8), rgba(255,255,255,0.08), rgba(0,0,0,0.8));
+    box-shadow: 0 0 8px rgba(0,0,0,0.8);
+    z-index: 15;
+  }
+  .book-ribbon-bookmark { display: none; }
+
+  /* LẬT DỌC 3D TRÊN ĐIỆN THOẠI (VERTICAL 3D FLIP LEAF) */
+  .book-flipping-leaf {
+    display: block !important;
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    width: calc(100% - 16px);
+    height: calc(50% - 8px);
+    border-radius: 12px;
+    z-index: 50;
+    transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
+    pointer-events: none;
+    will-change: transform;
+  }
+
+  .book-flipping-leaf .leaf-face {
+    padding: 14px 14px 12px;
+    border-radius: 12px;
+    clip-path: none !important;
+  }
+
+  /* Lật tiến (Next): Tờ dưới lật ngửa lên trên quanh gáy ngang */
+  .book-flipping-leaf.flip-forward {
+    top: 50%;
+    bottom: 8px;
+    left: 8px;
+    transform-origin: center top;
+    animation: flipMobileVerticalForward 0.65s cubic-bezier(0.3, 0.05, 0.25, 1) forwards;
+  }
+
+  /* Lật lùi (Prev): Tờ trên lật úp xuống dưới quanh gáy ngang */
+  .book-flipping-leaf.flip-backward {
+    top: 8px;
+    bottom: auto;
+    left: 8px;
+    transform-origin: center bottom;
+    animation: flipMobileVerticalBackward 0.65s cubic-bezier(0.3, 0.05, 0.25, 1) forwards;
+  }
+
+  .book-flipping-leaf .leaf-front {
+    border-radius: 0 0 12px 12px;
+    background: linear-gradient(180deg, #171b28 0%, #141724 30%, #111420 80%, #0a0c13 100%);
+  }
+
+  .book-flipping-leaf .leaf-back {
+    border-radius: 12px 12px 0 0;
+    background: linear-gradient(0deg, #171b28 0%, #141724 30%, #111420 80%, #0a0c13 100%);
+    transform: rotateX(180deg) !important;
+  }
+
+  .book-flipping-leaf .leaf-overlay-shadow {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.1) 60%, rgba(255, 255, 255, 0.12) 100%) !important;
+  }
+  .book-flipping-leaf .leaf-overlay-shadow.back-shadow {
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.1) 60%, rgba(255, 255, 255, 0.12) 100%) !important;
+  }
+
+  .book-movie-poster-wrap { max-height: 150px !important; }
+}
+
+/* ========================================================================= */
+/* BỘ LỌC TÌM KIẾM PHIM THEO NĂM VÀ QUỐC GIA (SEARCH FILTERS)                */
+/* ========================================================================= */
+.search-filter-section {
+  max-width: 960px;
+  margin: 20px 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .filter-group {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+.filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--fg);
+  min-width: 110px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.filter-label svg {
+  color: var(--accent);
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-chip {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  background: var(--card-bg, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.filter-chip:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--fg);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.filter-chip.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(229, 9, 20, 0.35);
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.clear-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.clear-filters-btn:hover {
+  color: var(--accent);
+}
+
+.search-status-bar {
+  margin: 16px 0 20px;
+}
+.search-status-bar .result-count {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+.search-status-bar .result-count strong {
+  color: var(--fg);
+}

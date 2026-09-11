@@ -1,0 +1,5 @@
+node_modules
+.next
+.next-recovery-before-player-fix/
+.env.local
+*.tsbuildinfo
