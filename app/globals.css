@@ -35,8 +35,9 @@
 .mobile-app-menu {
   display:block;
   position:fixed;
-  top:calc(env(safe-area-inset-top, 0px) + 14px);
+  top:50%;
   right:18px;
+  transform:translateY(-50%);
 }
 .mobile-app-launcher {
   position:relative;
@@ -62,11 +63,12 @@
 .mobile-menu-backdrop { z-index:68; border:0; width:100%; }
 .mobile-menu-drawer {
   position:fixed;
-  top:calc(env(safe-area-inset-top, 0px) + 70px);
-  right:18px;
+  top:50%;
+  right:76px;
+  transform:translateY(-50%);
   z-index:69;
-  width:min(286px, calc(100vw - 28px));
-  max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 84px);
+  width:min(286px, calc(100vw - 94px));
+  max-height:calc(100dvh - 28px);
   overflow-y:auto;
   padding:8px;
   border:1px solid rgba(255,255,255,.24);
@@ -2123,8 +2125,9 @@ html[data-theme="light"] .history-clear-btn:hover {
   .mobile-app-menu {
     display:block;
     position:fixed;
-    top:calc(env(safe-area-inset-top, 0px) + 10px);
+    top:50%;
     right:14px;
+    transform:translateY(-50%);
   }
   .mobile-app-launcher {
     position:relative;
@@ -2150,11 +2153,12 @@ html[data-theme="light"] .history-clear-btn:hover {
   .mobile-menu-backdrop { z-index:68; border:0; width:100%; }
   .mobile-menu-drawer {
     position:fixed;
-    top:calc(env(safe-area-inset-top, 0px) + 66px);
-    right:14px;
+    top:50%;
+    right:70px;
+    transform:translateY(-50%);
     z-index:69;
-    width:min(286px, calc(100vw - 28px));
-    max-height:calc(100dvh - env(safe-area-inset-top, 0px) - 80px);
+    width:min(286px, calc(100vw - 88px));
+    max-height:calc(100dvh - 28px);
     overflow-y:auto;
     padding:8px;
     border:1px solid rgba(255,255,255,.24);
