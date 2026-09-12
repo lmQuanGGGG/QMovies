@@ -77,6 +77,39 @@
   transform-origin:center;
   touch-action:manipulation;
 }
+.mobile-app-mark-link {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .15s ease;
+}
+.mobile-app-mark-link:active {
+  transform:scale(0.92);
+}
+.mobile-app-trigger {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex:1;
+  height:100%;
+  padding:0;
+  margin:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  font-size:12px;
+  font-weight:750;
+  letter-spacing:-.03em;
+  cursor:pointer;
+  outline:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.mobile-app-trigger span { writing-mode:horizontal-tb; transform:none; line-height:1; }
+.mobile-app-trigger svg { margin:0; }
 .mobile-app-launcher span { writing-mode:horizontal-tb; transform:none; line-height:1; }
 .mobile-app-launcher svg { margin:0; }
 .mobile-app-mark { width:23px; height:23px; border-radius:7px; display:block; }
@@ -107,14 +140,9 @@
 .mobile-menu-backdrop { z-index:0; border:0; width:100%; }
 .mobile-menu-drawer {
   position:fixed;
-  top:calc(50% + 2.5cm);
-  top:calc(50svh + 2.5cm);
+  top:50%;
   right:50px;
-  -webkit-transform:translateY(-50%) translate3d(0, 0, 0);
-  transform:translateY(-50%) translate3d(0, 0, 0);
-  -webkit-backface-visibility:hidden;
-  backface-visibility:hidden;
-  will-change:transform;
+  transform:translateY(-50%);
   z-index:1;
   width:min(276px, calc(100vw - 64px));
   max-height:calc(100dvh - 28px);
@@ -2290,14 +2318,9 @@ html[data-theme="light"] .history-clear-btn:hover {
   .mobile-menu-backdrop { z-index:0; border:0; width:100%; }
   .mobile-menu-drawer {
     position:fixed;
-    top:calc(50% + 2.5cm);
-    top:calc(50svh + 2.5cm);
+    top:50%;
     right:50px;
-    -webkit-transform:translateY(-50%) translate3d(0, 0, 0);
-    transform:translateY(-50%) translate3d(0, 0, 0);
-    -webkit-backface-visibility:hidden;
-    backface-visibility:hidden;
-    will-change:transform;
+    transform:translateY(-50%);
     z-index:69;
     width:min(276px, calc(100vw - 64px));
     max-height:calc(100dvh - 28px);

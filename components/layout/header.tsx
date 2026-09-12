@@ -174,18 +174,33 @@ export function Header() {
     </header>
 
     <div className="mobile-app-menu">
-      <button
-        type="button"
-        className="mobile-app-launcher"
-        onPointerUp={handleLauncherPointerUp}
-        onClick={handleLauncherClick}
-        aria-label={open ? "Đóng menu" : "Mở menu Movies"}
-        aria-expanded={open}
-      >
-        <Image className="mobile-app-mark" src="/brand/qmovies-cinema-icon.png" alt="" width={30} height={30} />
-        <span>Movies</span>
-        {open ? <X size={19} /> : <Menu size={20} />}
-      </button>
+      <div className="mobile-app-launcher">
+        <Link
+          href="/"
+          className="mobile-app-mark-link"
+          aria-label="Về trang chủ QMovies"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(false);
+          }}
+          onPointerUp={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <Image className="mobile-app-mark" src="/brand/qmovies-cinema-icon.png" alt="QMovies" width={30} height={30} />
+        </Link>
+        <button
+          type="button"
+          className="mobile-app-trigger"
+          onPointerUp={handleLauncherPointerUp}
+          onClick={handleLauncherClick}
+          aria-label={open ? "Đóng menu" : "Mở menu Movies"}
+          aria-expanded={open}
+        >
+          <span>Movies</span>
+          {open ? <X size={19} /> : <Menu size={20} />}
+        </button>
+      </div>
 
       {open && (
         <>
