@@ -80,6 +80,8 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [buffering, setBuffering] = useState(false);
+  const [hlsFallbackUrl, setHlsFallbackUrl] = useState<string | null>(null);
+  const [reloadAttempt, setReloadAttempt] = useState(0);
 
   // Cài đặt chất lượng, tốc độ & tỷ lệ hiển thị
   const [qualityOptions, setQualityOptions] = useState<QualityOption[]>([
@@ -222,6 +224,9 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
 
     setError(null);
     setBuffering(true);
+    setPlaying(false);
+    setQualityOptions([{ label: "Tự động (Auto)", levelIndex: -1 }]);
+    setSelectedQuality(-1);
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -252,21 +257,30 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       };
     }
 
-    // iOS Safari và PWA standalone có native HLS player. Ưu tiên nó trước
-    // hls.js: trên một số bản iOS, MSE báo hỗ trợ nhưng request HLS từ hls.js
-    // lại bị nguồn video chặn CORS, trong khi native player vẫn phát được.
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    // Chromium can report "maybe" for HLS even when its native pipeline cannot
+    // decode the stream. Prefer native HLS only on Apple WebKit (including PWA),
+    // or when MediaSource is unavailable. Fall back once if native loading fails.
+    const canUseHlsJs = Hls.isSupported();
+    const isAppleWebKit = /AppleWebKit/i.test(navigator.userAgent) &&
+      /Apple/i.test(navigator.vendor) && !/Chrome|Chromium|Edg|OPR|Android/i.test(navigator.userAgent);
+    const useNativeHls = !!video.canPlayType("application/vnd.apple.mpegurl") &&
+      (!canUseHlsJs || (isAppleWebKit && hlsFallbackUrl !== currentM3u8Url));
+    if (useNativeHls) {
       // Không autoplay ở đây vì Safari chỉ cho phép phát có tiếng sau thao tác
       // chạm trực tiếp của người dùng.
       const onNativeReady = () => setBuffering(false);
       const onNativeError = () => {
+        if (canUseHlsJs) {
+          setHlsFallbackUrl(currentM3u8Url);
+          return;
+        }
         setBuffering(false);
-        setError("Safari không thể tải luồng này. Hãy thử một nguồn video được cấp phép khác.");
+        setError(`Không thể tải video trên thiết bị này (mã ${video.error?.code ?? "không rõ"}). Hãy thử tải lại hoặc chọn trình phát dự phòng.`);
       };
 
-      video.src = currentM3u8Url;
       video.addEventListener("loadedmetadata", onNativeReady);
       video.addEventListener("error", onNativeError);
+      video.src = currentM3u8Url;
       video.load();
 
       return () => {
@@ -275,16 +289,14 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         video.removeAttribute("src");
         video.load();
       };
-    } else if (Hls.isSupported()) {
+    } else if (canUseHlsJs) {
+      let mediaRecoveries = 0;
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 90,
       });
       hlsRef.current = hls;
-
-      hls.loadSource(currentM3u8Url);
-      hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
         setBuffering(false);
@@ -303,14 +315,10 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         } else {
           setQualityOptions([
             { label: "Tự động (Auto)", levelIndex: -1 },
-            { label: "1080p (FHD)", levelIndex: 0 },
-            { label: "720p (HD)", levelIndex: 1 },
           ]);
         }
-
-        video.play().catch(() => {
-          setPlaying(false);
-        });
+        // Playback starts from the Play button, preserving the user gesture
+        // required for audible video in Safari and installed iOS apps.
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -318,18 +326,33 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
           console.warn("HLS Fatal error:", data.type, data.details);
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              hls.startLoad();
+              // HLS.js has already exhausted its internal retries at this point.
+              hls.stopLoad();
+              setBuffering(false);
+              setPlaying(false);
+              setError(`Không tải được nguồn video${data.response?.code ? ` (HTTP ${data.response.code})` : ""}. Hãy tải lại hoặc đổi máy chủ.`);
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              hls.recoverMediaError();
+              if (mediaRecoveries++ < 1) {
+                hls.recoverMediaError();
+              } else {
+                hls.stopLoad();
+                setBuffering(false);
+                setPlaying(false);
+                setError("Không giải mã được video. Hãy chọn trình phát dự phòng hoặc máy chủ khác.");
+              }
               break;
             default:
               hls.destroy();
+              setBuffering(false);
+              setPlaying(false);
               setError("Luồng M3U8 gặp sự cố kết nối. Bạn có thể chuyển sang Trình phát Embed (Nhúng).");
               break;
           }
         }
       });
+      hls.loadSource(currentM3u8Url);
+      hls.attachMedia(video);
     } else {
       setPlayerMode("embed");
     }
@@ -340,7 +363,7 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         hlsRef.current = null;
       }
     };
-  }, [currentM3u8Url, playerMode, source.type]);
+  }, [currentM3u8Url, playerMode, source.type, hlsFallbackUrl, reloadAttempt]);
 
   // Lắng nghe sự kiện của video element
   useEffect(() => {
@@ -401,7 +424,7 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       video.removeEventListener("pause", onPause);
       video.removeEventListener("ended", onEnded);
     };
-  }, [currentServer, selectedEpisodeIdx, selectedServerIdx, duration, checkAndResume, persistProgress]);
+  }, [currentServer, selectedEpisodeIdx, selectedServerIdx, duration, checkAndResume, persistProgress, playerMode]);
 
   // Tự động lưu khi tắt tab hoặc đổi tab
   useEffect(() => {
@@ -452,8 +475,17 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         setPlaying(false);
         triggerToast(<Pause size={32} fill="currentColor" />);
       }
-    } catch {
-      setError("Không thể phát video.");
+    } catch (cause) {
+      // Source changes and native-to-HLS fallback abort a pending play promise.
+      // They must not leave a fatal error overlay on the replacement player.
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+      setPlaying(false);
+      setBuffering(false);
+      if (cause instanceof DOMException && cause.name === "NotAllowedError") {
+        triggerToast(<Play size={32} />, "Chạm Phát để bắt đầu video");
+        return;
+      }
+      setError("Không thể phát nguồn video này. Hãy tải lại hoặc chọn trình phát dự phòng.");
     }
   }, [triggerToast]);
 
@@ -955,6 +987,13 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
               <div className="player-error">
                 <AlertCircle size={24} />
                 <strong>{error}</strong>
+                <button
+                  type="button"
+                  className="button primary"
+                  onClick={() => setReloadAttempt((attempt) => attempt + 1)}
+                >
+                  <RefreshCw size={16} /> Tải lại video
+                </button>
                 {currentEmbedUrl && (
                   <button 
                     className="button primary" 
