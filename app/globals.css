@@ -2465,6 +2465,8 @@ html[data-theme="light"] .history-clear-btn:hover {
 .book-3d-stage {
   position: relative;
   width: 100%;
+  touch-action: pan-y;
+  overscroll-behavior-x: contain;
   perspective: 2000px;
   perspective-origin: 50% 25%;
   display: flex;

@@ -228,6 +228,30 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       hlsRef.current = null;
     }
 
+    const isHlsStream = source.type === "hls" || /\.m3u8(?:[?#]|$)/i.test(currentM3u8Url);
+
+    // Safari/iOS phát MP4 trực tiếp bằng media element. Không đưa MP4 qua hls.js,
+    // vì điều đó làm trình phát không khởi tạo được trong app đã ghim (standalone).
+    if (!isHlsStream) {
+      const onDirectReady = () => setBuffering(false);
+      const onDirectError = () => {
+        setBuffering(false);
+        setError("Không thể tải video này trên thiết bị hiện tại.");
+      };
+
+      video.addEventListener("loadedmetadata", onDirectReady);
+      video.addEventListener("error", onDirectError);
+      video.src = currentM3u8Url;
+      video.load();
+
+      return () => {
+        video.removeEventListener("loadedmetadata", onDirectReady);
+        video.removeEventListener("error", onDirectError);
+        video.removeAttribute("src");
+        video.load();
+      };
+    }
+
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -284,12 +308,25 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Hỗ trợ Safari native HLS
-      video.src = currentM3u8Url;
-      video.addEventListener("loadedmetadata", () => {
+      // Safari/iOS dùng native HLS. Không autoplay ở đây vì Safari chỉ cho phép
+      // phát có tiếng sau thao tác chạm trực tiếp của người dùng.
+      const onNativeReady = () => setBuffering(false);
+      const onNativeError = () => {
         setBuffering(false);
-        video.play().catch(() => setPlaying(false));
-      });
+        setError("Safari không thể tải luồng này. Hãy thử một nguồn video được cấp phép khác.");
+      };
+
+      video.src = currentM3u8Url;
+      video.addEventListener("loadedmetadata", onNativeReady);
+      video.addEventListener("error", onNativeError);
+      video.load();
+
+      return () => {
+        video.removeEventListener("loadedmetadata", onNativeReady);
+        video.removeEventListener("error", onNativeError);
+        video.removeAttribute("src");
+        video.load();
+      };
     } else {
       setPlayerMode("embed");
     }
@@ -300,7 +337,7 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         hlsRef.current = null;
       }
     };
-  }, [currentM3u8Url, playerMode]);
+  }, [currentM3u8Url, playerMode, source.type]);
 
   // Lắng nghe sự kiện của video element
   useEffect(() => {

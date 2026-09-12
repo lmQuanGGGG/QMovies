@@ -98,6 +98,12 @@ export function BookFlipRail({
     const diffX = e.touches[0].clientX - touchStartX.current;
     const diffY = e.touches[0].clientY - touchStartY.current;
     if (Math.abs(diffX) > 12 || Math.abs(diffY) > 12) isDragging.current = true;
+
+    // Chỉ giữ cử chỉ vuốt ngang cho sách. Vuốt dọc phải để trang cuộn tự nhiên,
+    // nếu không iOS vừa cuộn trang vừa kích hoạt animation khiến toàn bộ trang rung.
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 12 && e.cancelable) {
+      e.preventDefault();
+    }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
@@ -105,11 +111,8 @@ export function BookFlipRail({
     const diffX = e.changedTouches[0].clientX - touchStartX.current;
     const diffY = e.changedTouches[0].clientY - touchStartY.current;
 
-    // Trên điện thoại, ưu tiên cử chỉ vuốt dọc (vuốt lên lật tiếp, vuốt xuống lật lùi) hoặc vuốt ngang
-    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 35) {
-      if (diffY < -35) handleNextPage();
-      else if (diffY > 35) handlePrevPage();
-    } else if (Math.abs(diffX) > 35) {
+    // Mobile chỉ lật bằng vuốt ngang; vuốt dọc dành hoàn toàn cho việc cuộn trang.
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 35) {
       if (diffX < -35) handleNextPage();
       else if (diffX > 35) handlePrevPage();
     }
