@@ -187,7 +187,6 @@ export function HistoryPage() {
                 <h1 style={{ margin: 0, fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 800 }}>
                   Lịch sử xem
                 </h1>
-                <span className="film-vintage-tag">35MM FILM REEL • ENDLESS LOOP</span>
               </div>
               <p style={{ margin: "4px 0 0", color: "var(--muted)", fontSize: 13 }}>
                 Danh sách các bộ phim bạn đang thưởng thức dở dang hoặc đã xem gần đây.

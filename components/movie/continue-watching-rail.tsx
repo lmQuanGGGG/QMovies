@@ -172,7 +172,6 @@ export function ContinueWatchingRail() {
             <Film size={18} className="film-header-icon" />
           </div>
           <h2>Tiếp tục xem</h2>
-          <span className="film-vintage-tag">35MM FILM REEL • ENDLESS LOOP</span>
         </div>
 
         <div className="film-heading-actions">
