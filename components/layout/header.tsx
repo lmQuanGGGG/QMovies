@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { History, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useApp } from "@/components/providers";
 
 const links = [
@@ -103,30 +103,26 @@ function MobileNavLinks({ onNavigate }: { onNavigate: () => void }) {
 export function Header() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
-  const launcherWasPressed = useRef(false);
   const { theme, toggleTheme } = useApp();
 
   const toggleMenu = () => setOpen((isOpen) => !isOpen);
-
-  // Some browser/PWA shells dispatch pointer events differently for an edge tab.
-  // Handle both paths while preventing the follow-up click from toggling twice.
-  const handleLauncherPointerUp = () => {
-    launcherWasPressed.current = true;
-    toggleMenu();
-    window.setTimeout(() => {
-      launcherWasPressed.current = false;
-    }, 0);
-  };
-
-  const handleLauncherClick = () => {
-    if (launcherWasPressed.current) return;
-    toggleMenu();
-  };
 
   // Đóng menu khi đổi route
   useEffect(() => {
     setOpen(false);
   }, [path]);
+
+  // Đóng menu khi nhấn phím Escape
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
 
   return (
     <>
@@ -183,17 +179,16 @@ export function Header() {
             e.stopPropagation();
             setOpen(false);
           }}
-          onPointerUp={(e) => {
-            e.stopPropagation();
-          }}
         >
           <Image className="mobile-app-mark" src="/brand/qmovies-cinema-icon.png" alt="QMovies" width={30} height={30} />
         </Link>
         <button
           type="button"
           className="mobile-app-trigger"
-          onPointerUp={handleLauncherPointerUp}
-          onClick={handleLauncherClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleMenu();
+          }}
           aria-label={open ? "Đóng menu" : "Mở menu Movies"}
           aria-expanded={open}
         >
@@ -201,37 +196,62 @@ export function Header() {
           {open ? <X size={19} /> : <Menu size={20} />}
         </button>
       </div>
-
-      {open && (
-        <>
-          <button className="mobile-menu-backdrop" onClick={() => setOpen(false)} aria-label="Đóng menu" />
-          <aside className="mobile-menu-drawer" aria-label="Menu Movies">
-            <div className="mobile-menu-tools">
-              <Link href="/search" onClick={() => setOpen(false)}>
-                <Search size={17} /> Tìm kiếm
-              </Link>
-              <button type="button" onClick={toggleTheme}>
-                {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
-                {theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
-              </button>
-            </div>
-            <Suspense
-              fallback={
-                <nav className="mobile-menu animate-fade-in">
-                  {links.map(([label, href]) => (
-                    <Link key={label} href={href} onClick={() => setOpen(false)}>
-                      {label}
-                    </Link>
-                  ))}
-                </nav>
-              }
-            >
-              <MobileNavLinks onNavigate={() => setOpen(false)} />
-            </Suspense>
-          </aside>
-        </>
-      )}
     </div>
+
+    {open && (
+      <div className="mobile-menu-portal">
+        <div 
+          className="mobile-menu-backdrop" 
+          onClick={() => setOpen(false)} 
+          aria-label="Đóng menu"
+          role="button"
+          tabIndex={-1}
+        />
+        <aside 
+          className="mobile-menu-drawer" 
+          aria-label="Menu Movies"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mobile-menu-header">
+            <div className="mobile-menu-brand">
+              <Image src="/brand/qmovies-cinema-icon.png" alt="" width={22} height={22} />
+              <span>QMovies</span>
+            </div>
+            <button
+              type="button"
+              className="mobile-menu-close-btn"
+              onClick={() => setOpen(false)}
+              aria-label="Đóng menu"
+            >
+              <X size={18} />
+            </button>
+          </div>
+
+          <div className="mobile-menu-tools">
+            <Link href="/search" onClick={() => setOpen(false)}>
+              <Search size={16} /> Tìm kiếm
+            </Link>
+            <button type="button" onClick={toggleTheme}>
+              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+            </button>
+          </div>
+          <Suspense
+            fallback={
+              <nav className="mobile-menu animate-fade-in">
+                {links.map(([label, href]) => (
+                  <Link key={label} href={href} onClick={() => setOpen(false)}>
+                    {label}
+                  </Link>
+                ))}
+              </nav>
+            }
+          >
+            <MobileNavLinks onNavigate={() => setOpen(false)} />
+          </Suspense>
+        </aside>
+      </div>
+    )}
     </>
   );
 }
