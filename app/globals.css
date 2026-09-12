@@ -134,6 +134,16 @@ html[data-theme="light"] .hero-carousel::after {
 .primary { background:var(--accent); color:white; }
 .secondary,.ghost { background:var(--surface); color:var(--fg); }
 .ghost { background:rgba(255,255,255,.18); color:#fff; backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,.25); }
+.hero-ghost {
+  background: rgba(18,18,24,.58);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.52);
+  box-shadow: 0 5px 20px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.16);
+  text-shadow: 0 1px 3px rgba(0,0,0,.75);
+  backdrop-filter: blur(14px) saturate(135%);
+  -webkit-backdrop-filter: blur(14px) saturate(135%);
+}
+.hero-ghost:hover { background:rgba(255,255,255,.24); border-color:rgba(255,255,255,.72); }
 :root:not([data-theme="dark"]) .ghost:not(.hero-ghost),
 html[data-theme="light"] .ghost:not(.hero-ghost) {
   background:rgba(0,0,0,.06);

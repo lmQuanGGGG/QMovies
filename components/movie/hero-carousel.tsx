@@ -82,7 +82,7 @@ export function HeroCarousel({ items, intervalMs = 6000 }: HeroCarouselProps) {
               <Play size={18} fill="currentColor" /> Xem ngay
             </Link>
             <Link 
-              className="button ghost" 
+              className="button ghost hero-ghost" 
               href={`/${hero.mediaType === "tv" ? "tv" : "movie"}/${heroKey}`}
             >
               <BookmarkPlus size={18} /> Chi tiết
