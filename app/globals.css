@@ -1471,6 +1471,10 @@ body:has(.watch-page) .header .icon-button { color:#fff; }
 /* Backdrop cho mobile menu */
 .mobile-menu-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.22); backdrop-filter:none; -webkit-backdrop-filter:none; z-index:48; animation:fadeInHero .2s ease-out; }
 :root:not([data-theme="dark"]) .mobile-menu-backdrop { background:rgba(17,24,39,.10); }
+/* Keep the scrim behind the glass panel on desktop as well as mobile. */
+.mobile-app-menu .mobile-menu-backdrop { z-index:0; }
+.mobile-app-menu .mobile-menu-drawer { z-index:1; }
+.mobile-app-menu .mobile-app-launcher { z-index:2; }
 
 /* ==========================================================================
    1. MỤC TIẾP TỤC XEM: CUỘN PHIM NHỰA 35MM ĐIỆN ẢNH HOÀI NIỆM (VINTAGE FILM REEL)
