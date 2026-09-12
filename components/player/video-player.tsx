@@ -1045,19 +1045,6 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
                     <span className="seek-num">10</span>
                   </button>
 
-                  {/* Nút Chuyển tập tiếp theo (dạng icon) ở cụm điều khiển trái nếu là phim bộ */}
-                  {hasNextEpisode && (
-                    <button 
-                      type="button" 
-                      onClick={handleNextEpisode} 
-                      className="control-btn next-control-btn"
-                      title={`Tập tiếp theo: ${nextEpisode?.name || `Tập ${selectedEpisodeIdx + 2}`} (Phím N)`} 
-                      aria-label="Tập tiếp theo"
-                    >
-                      <SkipForward size={19} fill="currentColor" />
-                    </button>
-                  )}
-
                   {/* Cụm điều khiển âm lượng */}
                   <div className="volume-control-wrap">
                     <button 
@@ -1088,21 +1075,22 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
                 </div>
 
                 <div className="controls-right">
-                  {/* Nút Tập tiếp theo dạng pill nổi bật nếu là phim nhiều tập */}
+                  {/* Nút nhanh tập tiếp theo */}
                   {hasNextEpisode && (
-                    <button
-                      type="button"
-                      className="next-episode-pill-btn"
-                      onClick={handleNextEpisode}
-                      title={`Chuyển sang ${nextEpisode?.name || `Tập ${selectedEpisodeIdx + 2}`} (Phím N)`}
-                      aria-label="Mở tập tiếp theo"
-                    >
-                      <SkipForward size={13} fill="currentColor" />
-                      <span className="next-ep-text-full">
-                        Tập tiếp theo{nextEpisode?.name ? ` • ${nextEpisode.name}` : ""}
+                    <div className="next-episode-quick">
+                      <button
+                        type="button"
+                        className="control-btn next-control-btn"
+                        onClick={handleNextEpisode}
+                        title={`Chuyển sang ${nextEpisode?.name || `Tập ${selectedEpisodeIdx + 2}`} (Phím N)`}
+                        aria-label="Mở tập tiếp theo"
+                      >
+                        <SkipForward size={19} fill="currentColor" />
+                      </button>
+                      <span className="next-episode-label">
+                        Tập tiếp · {nextEpisode?.name || `Tập ${selectedEpisodeIdx + 2}`}
                       </span>
-                      <span className="next-ep-text-short">Tập tiếp</span>
-                    </button>
+                    </div>
                   )}
 
                   <span className="source-badge">
