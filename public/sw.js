@@ -4,10 +4,20 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Keep dynamic film data and media out of a cache. This makes the installed app
-// behave exactly like the site while still satisfying PWA install requirements.
+// Cho phép PWA cài đặt nhưng KHÔNG can thiệp/chặn các luồng phát video, media, Range requests.
+// Trên iOS Safari & PWA Standalone WebKit, can thiệp vào fetch media bằng Service Worker
+// sẽ làm hỏng khả năng stream HLS m3u8 và các phân đoạn video .ts/.mp4.
 self.addEventListener("fetch", (event) => {
-  const requestUrl = new URL(event.request.url);
-  if (event.request.method !== "GET" || requestUrl.origin !== self.location.origin) return;
-  event.respondWith(fetch(event.request));
+  const req = event.request;
+  if (req.method !== "GET") return;
+
+  // Bỏ qua tuyệt đối các yêu cầu video, audio, media, range header, streaming
+  if (
+    req.destination === "video" ||
+    req.destination === "audio" ||
+    req.headers.has("range") ||
+    /\.(m3u8|ts|mp4|m4s|webm|aac|mp3)([?#]|$)/i.test(req.url)
+  ) {
+    return;
+  }
 });
