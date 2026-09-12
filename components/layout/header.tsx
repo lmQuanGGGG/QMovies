@@ -111,6 +111,7 @@ export function Header() {
   }, [path]);
 
   return (
+    <>
     <header className="header">
       <div className="header-inner">
         <Link href="/" className="logo" aria-label="QMovies home">
@@ -152,24 +153,51 @@ export function Header() {
         </div>
       </div>
 
+    </header>
+
+    <div className="mobile-app-menu">
+      <button
+        type="button"
+        className="mobile-app-launcher"
+        onClick={() => setOpen(!open)}
+        aria-label={open ? "Đóng menu" : "Mở menu Movies"}
+        aria-expanded={open}
+      >
+        <Image className="mobile-app-mark" src="/brand/qmovies-cinema-icon.png" alt="" width={30} height={30} />
+        <span>Movies</span>
+        {open ? <X size={19} /> : <Menu size={20} />}
+      </button>
+
       {open && (
         <>
-          <div className="mobile-menu-backdrop" onClick={() => setOpen(false)} />
-          <Suspense
-            fallback={
-              <nav className="mobile-menu animate-fade-in">
-                {links.map(([label, href]) => (
-                  <Link key={label} href={href} onClick={() => setOpen(false)}>
-                    {label}
-                  </Link>
-                ))}
-              </nav>
-            }
-          >
-            <MobileNavLinks onNavigate={() => setOpen(false)} />
-          </Suspense>
+          <button className="mobile-menu-backdrop" onClick={() => setOpen(false)} aria-label="Đóng menu" />
+          <aside className="mobile-menu-drawer" aria-label="Menu Movies">
+            <div className="mobile-menu-tools">
+              <Link href="/search" onClick={() => setOpen(false)}>
+                <Search size={17} /> Tìm kiếm
+              </Link>
+              <button type="button" onClick={toggleTheme}>
+                {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
+                {theme === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+              </button>
+            </div>
+            <Suspense
+              fallback={
+                <nav className="mobile-menu animate-fade-in">
+                  {links.map(([label, href]) => (
+                    <Link key={label} href={href} onClick={() => setOpen(false)}>
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+              }
+            >
+              <MobileNavLinks onNavigate={() => setOpen(false)} />
+            </Suspense>
+          </aside>
         </>
       )}
-    </header>
+    </div>
+    </>
   );
 }
