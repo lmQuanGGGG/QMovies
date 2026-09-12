@@ -252,7 +252,30 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       };
     }
 
-    if (Hls.isSupported()) {
+    // iOS Safari và PWA standalone có native HLS player. Ưu tiên nó trước
+    // hls.js: trên một số bản iOS, MSE báo hỗ trợ nhưng request HLS từ hls.js
+    // lại bị nguồn video chặn CORS, trong khi native player vẫn phát được.
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Không autoplay ở đây vì Safari chỉ cho phép phát có tiếng sau thao tác
+      // chạm trực tiếp của người dùng.
+      const onNativeReady = () => setBuffering(false);
+      const onNativeError = () => {
+        setBuffering(false);
+        setError("Safari không thể tải luồng này. Hãy thử một nguồn video được cấp phép khác.");
+      };
+
+      video.src = currentM3u8Url;
+      video.addEventListener("loadedmetadata", onNativeReady);
+      video.addEventListener("error", onNativeError);
+      video.load();
+
+      return () => {
+        video.removeEventListener("loadedmetadata", onNativeReady);
+        video.removeEventListener("error", onNativeError);
+        video.removeAttribute("src");
+        video.load();
+      };
+    } else if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -307,26 +330,6 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
           }
         }
       });
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari/iOS dùng native HLS. Không autoplay ở đây vì Safari chỉ cho phép
-      // phát có tiếng sau thao tác chạm trực tiếp của người dùng.
-      const onNativeReady = () => setBuffering(false);
-      const onNativeError = () => {
-        setBuffering(false);
-        setError("Safari không thể tải luồng này. Hãy thử một nguồn video được cấp phép khác.");
-      };
-
-      video.src = currentM3u8Url;
-      video.addEventListener("loadedmetadata", onNativeReady);
-      video.addEventListener("error", onNativeError);
-      video.load();
-
-      return () => {
-        video.removeEventListener("loadedmetadata", onNativeReady);
-        video.removeEventListener("error", onNativeError);
-        video.removeAttribute("src");
-        video.load();
-      };
     } else {
       setPlayerMode("embed");
     }
