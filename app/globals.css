@@ -35,11 +35,17 @@
 .mobile-app-menu {
   display:block;
   position:fixed;
-  top:calc(50% - 18px);
+  top:calc(50% - 18px + 2.5cm);
+  top:calc(50svh - 18px + 2.5cm);
   right:-35px;
-  transform:none;
+  -webkit-transform:translate3d(0, 0, 0);
+  transform:translate3d(0, 0, 0);
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+  will-change:transform;
   z-index:2147483000;
   isolation:isolate;
+  touch-action:manipulation;
 }
 .mobile-app-launcher {
   position:relative;
@@ -66,12 +72,14 @@
   will-change:transform;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
-  transform:rotate(-90deg);
+  -webkit-transform:rotate(-90deg) translateZ(0);
+  transform:rotate(-90deg) translateZ(0);
   transform-origin:center;
+  touch-action:manipulation;
 }
 .mobile-app-launcher span { writing-mode:horizontal-tb; transform:none; line-height:1; }
 .mobile-app-launcher svg { margin:0; }
-.mobile-app-mark { width:23px; height:23px; border-radius:7px; }
+.mobile-app-mark { width:23px; height:23px; border-radius:7px; display:block; }
 :root:not([data-theme="dark"]) .mobile-app-launcher {
   color:#111318;
   border-color:rgba(255,255,255,.72);
@@ -99,9 +107,14 @@
 .mobile-menu-backdrop { z-index:0; border:0; width:100%; }
 .mobile-menu-drawer {
   position:fixed;
-  top:50%;
+  top:calc(50% + 2.5cm);
+  top:calc(50svh + 2.5cm);
   right:50px;
-  transform:translateY(-50%);
+  -webkit-transform:translateY(-50%) translate3d(0, 0, 0);
+  transform:translateY(-50%) translate3d(0, 0, 0);
+  -webkit-backface-visibility:hidden;
+  backface-visibility:hidden;
+  will-change:transform;
   z-index:1;
   width:min(276px, calc(100vw - 64px));
   max-height:calc(100dvh - 28px);
@@ -336,6 +349,18 @@ html[data-theme="light"] .ghost:not(.hero-ghost) {
   display: block; 
   cursor: pointer; 
   object-fit: contain;
+}
+
+/* Loại bỏ triệt để nút phát mặc định màu đen của WebKit/iOS Safari khi đã có sẵn nút phát đỏ */
+.video-player video::-webkit-media-controls,
+.video-player video::-webkit-media-controls-start-playback-button,
+.video-player video::-webkit-media-controls-overlay-play-button,
+.video-player video::-webkit-media-controls-play-button,
+.video-player video::-webkit-media-controls-enclosure {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Các chế độ tỷ lệ khung hình video: Fit (Vừa khung), Cover (Tràn viền / Cắt viền đen), Fill (Kéo giãn) */
@@ -2220,10 +2245,16 @@ html[data-theme="light"] .history-clear-btn:hover {
   .mobile-app-menu {
     display:block;
     position:fixed;
-    top:calc(50% - 18px);
+    top:calc(50% - 18px + 2.5cm);
+    top:calc(50svh - 18px + 2.5cm);
     right:-35px;
-    transform:none;
+    -webkit-transform:translate3d(0, 0, 0);
+    transform:translate3d(0, 0, 0);
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+    will-change:transform;
     z-index:2147483000;
+    touch-action:manipulation;
   }
   .mobile-app-launcher {
     position:relative;
@@ -2249,17 +2280,24 @@ html[data-theme="light"] .history-clear-btn:hover {
     will-change:transform;
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
-    transform:rotate(-90deg);
+    -webkit-transform:rotate(-90deg) translateZ(0);
+    transform:rotate(-90deg) translateZ(0);
     transform-origin:center;
+    touch-action:manipulation;
   }
   .mobile-app-launcher svg { margin:0; }
-  .mobile-app-mark { width:23px; height:23px; border-radius:7px; }
+  .mobile-app-mark { width:23px; height:23px; border-radius:7px; display:block; }
   .mobile-menu-backdrop { z-index:0; border:0; width:100%; }
   .mobile-menu-drawer {
     position:fixed;
-    top:50%;
+    top:calc(50% + 2.5cm);
+    top:calc(50svh + 2.5cm);
     right:50px;
-    transform:translateY(-50%);
+    -webkit-transform:translateY(-50%) translate3d(0, 0, 0);
+    transform:translateY(-50%) translate3d(0, 0, 0);
+    -webkit-backface-visibility:hidden;
+    backface-visibility:hidden;
+    will-change:transform;
     z-index:69;
     width:min(276px, calc(100vw - 64px));
     max-height:calc(100dvh - 28px);
