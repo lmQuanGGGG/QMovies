@@ -61,8 +61,12 @@
   border-radius:12px 12px 0 0;
   background:rgba(10,13,19,.58);
   box-shadow:0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.16);
-  backdrop-filter:blur(18px) saturate(150%);
-  -webkit-backdrop-filter:blur(18px) saturate(150%);
+  /* Backdrop-filter trên phần tử fixed làm iOS repaint mỗi lần cuộn. */
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  will-change:transform;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
   transform:rotate(-90deg);
   transform-origin:center;
 }
@@ -74,6 +78,23 @@
   border-color:rgba(255,255,255,.72);
   background:rgba(255,255,255,.62);
   box-shadow:0 8px 24px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.78);
+}
+:root:not([data-theme="dark"]) .mobile-menu-drawer {
+  color:#14171c;
+  border-color:rgba(0,0,0,.12);
+  background:rgba(255,255,255,.88);
+  box-shadow:0 18px 48px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.92);
+}
+:root:not([data-theme="dark"]) .mobile-menu-tools a,
+:root:not([data-theme="dark"]) .mobile-menu-tools button {
+  color:#14171c;
+  background:rgba(0,0,0,.07);
+}
+:root:not([data-theme="dark"]) .mobile-menu a { color:#14171c; }
+:root:not([data-theme="dark"]) .mobile-menu a:hover,
+:root:not([data-theme="dark"]) .mobile-menu a.active {
+  color:#14171c;
+  background:rgba(0,0,0,.09);
 }
 .mobile-menu-backdrop { z-index:0; border:0; width:100%; }
 .mobile-menu-drawer {
@@ -2164,8 +2185,11 @@ html[data-theme="light"] .history-clear-btn:hover {
     border-radius:12px 12px 0 0;
     background:rgba(10,13,19,.58);
     box-shadow:0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.16);
-    backdrop-filter:blur(18px) saturate(150%);
-    -webkit-backdrop-filter:blur(18px) saturate(150%);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+    will-change:transform;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
     transform:rotate(-90deg);
     transform-origin:center;
   }
