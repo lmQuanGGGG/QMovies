@@ -113,7 +113,7 @@ export function Explore({
       {/* Bộ lọc Thể loại, Quốc gia và Năm */}
       <div className="explore-filters-box" style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 26 }}>
         {/* Thể loại */}
-        <div className="filter-row" style={{ padding: "0 0 4px" }}>
+        <div className="filter-row explore-filter-row">
           {GENRE_FILTERS.map((filter) => {
             const isActive = (!filter.value && !currentGenre) || currentGenre === filter.value;
             const href = buildPageUrl(1, filter.value, currentCountry, currentYear);
@@ -130,7 +130,7 @@ export function Explore({
         </div>
 
         {/* Quốc gia */}
-        <div className="filter-row" style={{ padding: "0 0 4px" }}>
+        <div className="filter-row explore-filter-row">
           {COUNTRY_FILTERS.map((filter) => {
             const isActive = (!filter.value && !currentCountry) || currentCountry === filter.value;
             const href = buildPageUrl(1, currentGenre, filter.value, currentYear);
@@ -147,7 +147,7 @@ export function Explore({
         </div>
 
         {/* Năm phát hành */}
-        <div className="filter-row" style={{ padding: "0 0 4px" }}>
+        <div className="filter-row explore-filter-row">
           {YEAR_FILTERS.map((filter) => {
             const isActive = (!filter.value && !currentYear) || currentYear === filter.value;
             const href = buildPageUrl(1, currentGenre, currentCountry, filter.value);
