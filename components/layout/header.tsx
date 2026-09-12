@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { History, Menu, Moon, Search, Sun, X } from "lucide-react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useApp } from "@/components/providers";
 
 const links = [
@@ -103,7 +103,25 @@ function MobileNavLinks({ onNavigate }: { onNavigate: () => void }) {
 export function Header() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const launcherWasPressed = useRef(false);
   const { theme, toggleTheme } = useApp();
+
+  const toggleMenu = () => setOpen((isOpen) => !isOpen);
+
+  // Some browser/PWA shells dispatch pointer events differently for an edge tab.
+  // Handle both paths while preventing the follow-up click from toggling twice.
+  const handleLauncherPointerUp = () => {
+    launcherWasPressed.current = true;
+    toggleMenu();
+    window.setTimeout(() => {
+      launcherWasPressed.current = false;
+    }, 0);
+  };
+
+  const handleLauncherClick = () => {
+    if (launcherWasPressed.current) return;
+    toggleMenu();
+  };
 
   // Đóng menu khi đổi route
   useEffect(() => {
@@ -145,7 +163,7 @@ export function Header() {
           </Link>
           <button
             className="menu-button icon-button"
-            onClick={() => setOpen(!open)}
+            onClick={toggleMenu}
             aria-label={open ? "Đóng menu" : "Mở menu"}
           >
             {open ? <X size={21} /> : <Menu size={21} />}
@@ -159,7 +177,8 @@ export function Header() {
       <button
         type="button"
         className="mobile-app-launcher"
-        onClick={() => setOpen(!open)}
+        onPointerUp={handleLauncherPointerUp}
+        onClick={handleLauncherClick}
         aria-label={open ? "Đóng menu" : "Mở menu Movies"}
         aria-expanded={open}
       >
