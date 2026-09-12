@@ -228,17 +228,10 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       hlsRef.current = null;
     }
 
-    // Tối ưu các cờ thuộc tính WebKit cho iOS PWA Standalone
-    try {
-      video.playsInline = true;
-      (video as unknown as { webkitPlaysInline: boolean }).webkitPlaysInline = true;
-    } catch {
-      // Ignore if not supported
-    }
-
     const isHlsStream = source.type === "hls" || /\.m3u8(?:[?#]|$)/i.test(currentM3u8Url);
 
-    // Xử lý MP4 trực tiếp
+    // Safari/iOS phát MP4 trực tiếp bằng media element. Không đưa MP4 qua hls.js,
+    // vì điều đó làm trình phát không khởi tạo được trong app đã ghim (standalone).
     if (!isHlsStream) {
       const onDirectReady = () => setBuffering(false);
       const onDirectError = () => {
@@ -259,70 +252,9 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       };
     }
 
-    // Nhận diện thiết bị Apple (iPhone, iPad, Mac Safari) và chế độ PWA Standalone
-    const isAppleDevice = typeof navigator !== "undefined" && (
-      /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ||
-      (/Safari/i.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS|Android/i.test(navigator.userAgent))
-    );
-
-    const isPwaStandalone = typeof window !== "undefined" && (
-      Boolean((window.navigator as unknown as { standalone?: boolean }).standalone) ||
-      window.matchMedia("(display-mode: standalone)").matches
-    );
-
-    const canPlayAppleHls = Boolean(
-      video.canPlayType("application/vnd.apple.mpegurl") ||
-      video.canPlayType("application/x-mpegURL")
-    );
-
-    // Bộ khởi tạo Native HLS chuẩn Apple (hoạt động hoàn hảo trên iOS Safari & PWA Standalone)
-    const initNativeHls = () => {
-      const onNativeReady = () => {
-        setBuffering(false);
-        // Thử tự động phát, nếu iOS chặn autoplay có tiếng thì để nút Play to chờ người dùng bấm
-        video.play().then(() => {
-          setPlaying(true);
-        }).catch(() => {
-          setPlaying(false);
-        });
-      };
-
-      const onNativeError = () => {
-        setBuffering(false);
-        // Nếu Native HLS gặp sự cố và Hls.js hỗ trợ thì thử fallback sang Hls.js
-        if (!hlsRef.current && Hls.isSupported() && !isAppleDevice) {
-          initHlsJs();
-        } else {
-          setError("Luồng M3U8 gặp sự cố kết nối. Bạn có thể chuyển sang Trình phát Embed (Nhúng).");
-        }
-      };
-
-      video.src = currentM3u8Url;
-      video.addEventListener("loadedmetadata", onNativeReady);
-      video.addEventListener("canplay", onNativeReady);
-      video.addEventListener("error", onNativeError);
-      video.load();
-
-      setQualityOptions([
-        { label: "Tự động (Apple HLS Chuẩn)", levelIndex: -1 },
-        { label: "1080p (FHD)", levelIndex: 0 },
-        { label: "720p (HD)", levelIndex: 1 },
-      ]);
-
-      return () => {
-        video.removeEventListener("loadedmetadata", onNativeReady);
-        video.removeEventListener("canplay", onNativeReady);
-        video.removeEventListener("error", onNativeError);
-        video.removeAttribute("src");
-        video.load();
-      };
-    };
-
-    // Bộ khởi tạo Hls.js (Dành cho Chrome, Edge, Firefox, Android)
-    const initHlsJs = () => {
+    if (Hls.isSupported()) {
       const hls = new Hls({
-        enableWorker: !isPwaStandalone, // Tránh lỗi sandbox worker trong PWA WebKit
+        enableWorker: true,
         lowLatencyMode: true,
         backBufferLength: 90,
       });
@@ -333,12 +265,14 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
 
       hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
         setBuffering(false);
+
+        // Lấy danh sách chất lượng có sẵn từ luồng HLS
         if (data.levels && data.levels.length > 0) {
           const levels: QualityOption[] = data.levels.map((lvl, idx) => ({
             label: lvl.height ? `${lvl.height}p` : `Chất lượng ${idx + 1}`,
             levelIndex: idx,
           }));
-          levels.reverse();
+          levels.reverse(); // Đưa độ phân giải cao lên đầu
           setQualityOptions([
             { label: "Tự động (Auto)", levelIndex: -1 },
             ...levels,
@@ -368,35 +302,31 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
               break;
             default:
               hls.destroy();
-              hlsRef.current = null;
-              // Nếu Hls.js chết trên thiết bị hỗ trợ native HLS, chuyển ngay sang Native
-              if (canPlayAppleHls) {
-                initNativeHls();
-              } else {
-                setError("Luồng M3U8 gặp sự cố kết nối. Bạn có thể chuyển sang Trình phát Embed (Nhúng).");
-              }
+              setError("Luồng M3U8 gặp sự cố kết nối. Bạn có thể chuyển sang Trình phát Embed (Nhúng).");
               break;
           }
         }
       });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari/iOS dùng native HLS. Không autoplay ở đây vì Safari chỉ cho phép
+      // phát có tiếng sau thao tác chạm trực tiếp của người dùng.
+      const onNativeReady = () => setBuffering(false);
+      const onNativeError = () => {
+        setBuffering(false);
+        setError("Safari không thể tải luồng này. Hãy thử một nguồn video được cấp phép khác.");
+      };
+
+      video.src = currentM3u8Url;
+      video.addEventListener("loadedmetadata", onNativeReady);
+      video.addEventListener("error", onNativeError);
+      video.load();
 
       return () => {
-        if (hlsRef.current) {
-          hlsRef.current.destroy();
-          hlsRef.current = null;
-        }
+        video.removeEventListener("loadedmetadata", onNativeReady);
+        video.removeEventListener("error", onNativeError);
+        video.removeAttribute("src");
+        video.load();
       };
-    };
-
-    // QUY TẮC ƯU TIÊN:
-    // 1. Trên iOS, Safari hoặc PWA Standalone: luôn ưu tiên Native HLS vì engine WebKit của Apple cực kỳ tương thích và tối ưu
-    // 2. Trên trình duyệt khác (Chrome, Edge, Android): dùng Hls.js
-    if ((isAppleDevice || isPwaStandalone) && canPlayAppleHls) {
-      return initNativeHls();
-    } else if (Hls.isSupported()) {
-      return initHlsJs();
-    } else if (canPlayAppleHls) {
-      return initNativeHls();
     } else {
       setPlayerMode("embed");
     }
@@ -519,14 +449,8 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
         setPlaying(false);
         triggerToast(<Pause size={32} fill="currentColor" />);
       }
-    } catch (err: unknown) {
-      const errorObj = err as { name?: string };
-      // Nếu là chính sách chặn autoplay của iOS hoặc người dùng chạm nhanh thì không coi là hỏng video
-      if (errorObj?.name === "NotAllowedError" || errorObj?.name === "AbortError") {
-        setPlaying(false);
-      } else {
-        console.warn("Lỗi phát video:", err);
-      }
+    } catch {
+      setError("Không thể phát video.");
     }
   }, [triggerToast]);
 
@@ -934,29 +858,11 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
             <video
               ref={videoRef}
               className={`player-video-media fit-${videoFit}`}
-              preload="auto"
+              preload="metadata"
               playsInline
               onClick={togglePlay}
               onDoubleClick={handleFullscreen}
             />
-
-            {/* Nút Play to chính giữa màn hình (Tối ưu tương tác chạm cho PWA và Mobile) */}
-            {!playing && !buffering && !error && (
-              <button
-                type="button"
-                className="player-big-play-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  togglePlay();
-                }}
-                aria-label="Phát video"
-              >
-                <div className="player-big-play-pulse" />
-                <div className="player-big-play-icon">
-                  <Play size={38} fill="#ffffff" color="#ffffff" style={{ marginLeft: 4 }} />
-                </div>
-              </button>
-            )}
 
             {/* OSD Toast thông báo phím tắt giữa màn hình */}
             {toast && (
