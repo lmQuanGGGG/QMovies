@@ -59,11 +59,10 @@
   border:1px solid rgba(255,255,255,.28);
   /* Sau khi xoay -90°, hai góc đáy này nằm sát mép phải màn hình. */
   border-radius:12px 12px 0 0;
-  background:rgba(10,13,19,.58);
+  background:rgba(10,13,19,.34);
   box-shadow:0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.16);
-  /* Backdrop-filter trên phần tử fixed làm iOS repaint mỗi lần cuộn. */
-  backdrop-filter:none;
-  -webkit-backdrop-filter:none;
+  backdrop-filter:blur(10px) saturate(135%);
+  -webkit-backdrop-filter:blur(10px) saturate(135%);
   will-change:transform;
   backface-visibility:hidden;
   -webkit-backface-visibility:hidden;
@@ -76,7 +75,7 @@
 :root:not([data-theme="dark"]) .mobile-app-launcher {
   color:#111318;
   border-color:rgba(255,255,255,.72);
-  background:rgba(255,255,255,.62);
+  background:rgba(255,255,255,.46);
   box-shadow:0 8px 24px rgba(0,0,0,.14), inset 0 1px 0 rgba(255,255,255,.78);
 }
 :root:not([data-theme="dark"]) .mobile-menu-drawer {
@@ -2183,10 +2182,10 @@ html[data-theme="light"] .history-clear-btn:hover {
     letter-spacing:-.03em;
     border:1px solid rgba(255,255,255,.28);
     border-radius:12px 12px 0 0;
-    background:rgba(10,13,19,.58);
+    background:rgba(10,13,19,.34);
     box-shadow:0 8px 24px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.16);
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    backdrop-filter:blur(10px) saturate(135%);
+    -webkit-backdrop-filter:blur(10px) saturate(135%);
     will-change:transform;
     backface-visibility:hidden;
     -webkit-backface-visibility:hidden;
