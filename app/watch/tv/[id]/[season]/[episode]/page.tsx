@@ -38,9 +38,12 @@ export default async function WatchTV({
       <div className="watch-copy tv-watch">
         <div>
           <p className="eyebrow">
-            {media.title} · Phần {p.season}
+            Phần {p.season} · {currentEpTitle}
           </p>
-          <h1>{currentEpTitle}</h1>
+          <h1>{media.title}</h1>
+          {media.originalTitle && media.originalTitle !== media.title && (
+            <p className="watch-original-title">{media.originalTitle}</p>
+          )}
           <p>{media.overview}</p>
         </div>
 

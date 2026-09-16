@@ -29,7 +29,7 @@ export default async function WatchMovie({ params }: { params: Promise<{ id: str
         </p>
         <h1>{media.title}</h1>
         {media.originalTitle && media.originalTitle !== media.title && (
-          <p style={{ color: "var(--muted)", margin: "0 0 12px", fontSize: 14 }}>
+          <p className="watch-original-title">
             {media.originalTitle}
           </p>
         )}
