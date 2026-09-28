@@ -329,9 +329,6 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
       });
       hlsRef.current = hls;
 
-      hls.loadSource(currentM3u8Url);
-      hls.attachMedia(video);
-
       hls.on(Hls.Events.MANIFEST_PARSED, (_event, data) => {
         setBuffering(false);
         if (data.levels && data.levels.length > 0) {
@@ -380,6 +377,11 @@ export function VideoPlayer({ source, servers: propServers, media, onEpisodeChan
           }
         }
       });
+
+      // Register listeners before starting requests so a fast/cached manifest
+      // cannot emit MANIFEST_PARSED before the player is ready to handle it.
+      hls.loadSource(currentM3u8Url);
+      hls.attachMedia(video);
 
       return () => {
         if (hlsRef.current) {
